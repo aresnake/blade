@@ -1,0 +1,25 @@
+﻿# Blade v13 — render output defaults (mp4 H.264 + AAC via FFmpeg)
+format: "FFMPEG"
+filepath: "//renders/out.mp4"   # relatif au .blend
+use_file_extension: true
+
+ffmpeg:
+  format: "MPEG4"               # conteneur
+  codec: "H264"
+  audio_codec: "AAC"
+  ffmpeg_preset: "GOOD"
+  constant_rate_factor: "MEDIUM"
+  max_b_frames: 2
+  use_autosplit: false
+
+video:
+  bitrate: 8000
+  minrate: 0
+  maxrate: 12000
+  gopsize: 12
+
+audio:
+  use_audio: true
+  audio_mixrate: 48000
+  audio_channels: "STEREO"
+  audio_bitrate: 192
