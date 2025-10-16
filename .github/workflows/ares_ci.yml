@@ -13,12 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - name: Install tools
         run: pip install ruff
       - name: Ruff (warn-only)
-\1run: |
-\1  ruff check ares || echo "::warning ::ruff found issues (not blocking)"
+        run: |
+          ruff check ares || echo "::warning ::ruff found issues (not blocking)"
       - name: Syntax check (py_compile)
         run: |
           python - << 'PY'
@@ -34,36 +35,31 @@ PY
     if: startsWith(github.ref, 'refs/heads/dev') || startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
-      - name: Determine version
+
+      - name: Determine version (tag or dev sha)
         id: ver
         shell: bash
         run: |
-          set -e
-          ver="0.0.0"
-          if [ -f ares/__init__.py ]; then
-            ver=$(python - <<'PY'
-import re, io
-t = io.open('ares/__init__.py','r',encoding='utf-8').read()
-m = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", t)
-print(m.group(1) if m else '0.0.0')
-PY
-)
-          fi
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            ver="${GITHUB_REF#refs/tags/}"; ver="${ver#v}"
+            ver="${GITHUB_REF#refs/tags/}"
+            ver="${ver#v}"
+          else
+            ver="dev-${GITHUB_SHA:0:7}"
           fi
           echo "version=$ver" >> "$GITHUB_OUTPUT"
+
       - name: Build zip (clean)
         shell: bash
         run: |
           set -e
           mkdir -p dist
           ZIP_NAME="blade_ares-${{ steps.ver.outputs.version }}.zip"
-          echo "→ Packing dist/$ZIP_NAME"
+          echo "Packing dist/$ZIP_NAME"
           zip -r "dist/$ZIP_NAME" ares \
             -x "ares/**/__pycache__/*" "ares/**/*.pyc" "ares/**/*.pyo" "ares/**/*.bak" "ares/**/*.orig"
           [ -f README.md ] && zip -u "dist/$ZIP_NAME" README.md
           ls -la dist
+
       - name: Upload artifact (dev)
         if: startsWith(github.ref, 'refs/heads/dev')
         uses: actions/upload-artifact@v4
@@ -79,12 +75,14 @@ PY
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
+
       - name: Determine version (from tag)
         id: ver
         shell: bash
         run: |
           ver="${GITHUB_REF#refs/tags/}"; ver="${ver#v}"
           echo "version=$ver" >> "$GITHUB_OUTPUT"
+
       - name: Rebuild zip
         shell: bash
         run: |
@@ -94,6 +92,7 @@ PY
           zip -r "dist/$ZIP_NAME" ares \
             -x "ares/**/__pycache__/*" "ares/**/*.pyc" "ares/**/*.pyo" "ares/**/*.bak" "ares/**/*.orig"
           [ -f README.md ] && zip -u "dist/$ZIP_NAME" README.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
