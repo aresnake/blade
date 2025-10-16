@@ -1,0 +1,28 @@
+﻿# OS / éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Blender artefacts
+*.blend1
+*.blend2
+*.blend@
+*.blend~
+*.blend.lock
+*.blend.tmp
+
+# Logs / datasets / artefacts volumineux
+logs/
+summary/
+datasets/
+resources/temp/
+*.log
+*.tmp
+*.bak
