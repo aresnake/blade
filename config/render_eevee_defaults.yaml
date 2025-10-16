@@ -1,0 +1,22 @@
+﻿# Blade v13 — Presets EEVEE (stables, conservateurs)
+# Ces valeurs sont appliquées par nos scripts (optionnel) ; ne dépend pas d’add-ons externes.
+
+eevee:
+  use_gtao: true           # Ambient Occlusion
+  use_bloom: true
+  use_soft_shadows: true
+  shadow_cube_size: 1024
+  shadow_cascade_size: 2048
+  taa_samples: 16          # viewport
+  taa_render_samples: 64   # render
+  use_ssr: false           # SSR (désactivé par défaut pour robustesse)
+  use_volumetric_shadows: true
+
+color_management:
+  view_transform: "Filmic"
+  look: "None"
+  exposure: 0.0
+  gamma: 1.0
+
+world_defaults:
+  use_nodes: true          # le script garantit l’existence du node tree, sans le réassigner

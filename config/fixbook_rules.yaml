@@ -1,0 +1,37 @@
+﻿# Blade v13 — FixBook (squelette règles)
+version: 1
+blender_min: "4.5.2"
+
+rules:
+  - id: uv_sphere_diameter_to_radius
+    tag: never_again_03
+    intent: "Remplacer l’argument 'diameter' par 'radius' pour UV Sphere."
+    applies_to: "bpy.ops.mesh.primitive_uv_sphere_add"
+    detect:
+      args_forbidden: ["diameter"]
+    fix:
+      transform_args:
+        - remove: ["diameter"]
+        - add:
+            radius: "__REQUIRED__"   # A calculer côté appelant (diameter/2) si nécessaire
+    note: "Toujours passer par 'radius'."
+
+  - id: track_to_strict_axes
+    tag: never_again_04
+    intent: "Contraintes Track To avec axes stricts."
+    applies_to: "Object.constraints[TRACK_TO]"
+    fix:
+      set:
+        track_axis: "TRACK_NEGATIVE_Z"
+        up_axis: "UP_Y"
+
+  - id: scene_nodes_no_reassign
+    tag: never_again_05
+    intent: "Ne pas réassigner scene.node_tree ; activer use_nodes et éditer le tree existant."
+    applies_to: "bpy.context.scene.node_tree"
+    detect:
+      forbidden: ["reassign_tree"]
+    fix:
+      steps:
+        - "scene.use_nodes = True"
+        - "récupérer tree = scene.node_tree et le modifier (création de nodes si absents)"
