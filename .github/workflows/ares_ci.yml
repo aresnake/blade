@@ -1,4 +1,4 @@
-name: ARES CI
+name: ARES CI+
 
 on:
   push:
@@ -8,27 +8,19 @@ on:
 
 jobs:
   quality:
-    name: Quality checks (lint + syntax)
+    name: Lint & Syntax
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
       - name: Install tools
         run: pip install ruff
-
-      - name: Ruff lint (non-blocking)
-        run: |
-          ruff check ares || echo "::warning ::ruff found issues (non-blocking)"
-
+      - name: Ruff (warn-only)
+\1run: |
+\1  ruff check ares || echo "::warning ::ruff found issues (not blocking)"
       - name: Syntax check (py_compile)
         run: |
-          set -e
           python - << 'PY'
 import compileall, sys
 ok = compileall.compile_dir('ares', maxlevels=10, quiet=1)
@@ -41,9 +33,7 @@ PY
     needs: quality
     if: startsWith(github.ref, 'refs/heads/dev') || startsWith(github.ref, 'refs/tags/')
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Determine version
         id: ver
         shell: bash
@@ -63,8 +53,7 @@ PY
             ver="${GITHUB_REF#refs/tags/}"; ver="${ver#v}"
           fi
           echo "version=$ver" >> "$GITHUB_OUTPUT"
-
-      - name: Build zip (clean, no junk)
+      - name: Build zip (clean)
         shell: bash
         run: |
           set -e
@@ -72,11 +61,10 @@ PY
           ZIP_NAME="blade_ares-${{ steps.ver.outputs.version }}.zip"
           echo "→ Packing dist/$ZIP_NAME"
           zip -r "dist/$ZIP_NAME" ares \
-            -x "ares/**/__pycache__/*" "ares/**/*.pyc" "ares/**/*.pyo" "ares/**/*.bak"
+            -x "ares/**/__pycache__/*" "ares/**/*.pyc" "ares/**/*.pyo" "ares/**/*.bak" "ares/**/*.orig"
           [ -f README.md ] && zip -u "dist/$ZIP_NAME" README.md
           ls -la dist
-
-      - name: Upload artifact (dev only)
+      - name: Upload artifact (dev)
         if: startsWith(github.ref, 'refs/heads/dev')
         uses: actions/upload-artifact@v4
         with:
@@ -90,28 +78,22 @@ PY
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Determine version (from tag)
         id: ver
         shell: bash
         run: |
-          set -e
           ver="${GITHUB_REF#refs/tags/}"; ver="${ver#v}"
           echo "version=$ver" >> "$GITHUB_OUTPUT"
-
-      - name: Rebuild zip for release
+      - name: Rebuild zip
         shell: bash
         run: |
           set -e
           mkdir -p dist
           ZIP_NAME="blade_ares-${{ steps.ver.outputs.version }}.zip"
           zip -r "dist/$ZIP_NAME" ares \
-            -x "ares/**/__pycache__/*" "ares/**/*.pyc" "ares/**/*.pyo" "ares/**/*.bak"
+            -x "ares/**/__pycache__/*" "ares/**/*.pyc" "ares/**/*.pyo" "ares/**/*.bak" "ares/**/*.orig"
           [ -f README.md ] && zip -u "dist/$ZIP_NAME" README.md
-          ls -la dist
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

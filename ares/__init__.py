@@ -1,4 +1,4 @@
-﻿bl_info = {
+bl_info = {
     "name": "ARES Blade Panel",
     "author": "Adrien + ARES",
     "version": (0, 1, 0),
@@ -219,4 +219,4 @@ def unregister():
 if __name__ == "__main__":
     register()
 
-`n__version__ = "13.0.0-test"
+__version__ = "13.0.0-test"

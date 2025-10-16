@@ -1,0 +1,30 @@
+{
+  "version": "4.5.x",
+  "rules": [
+    {
+      "id": "no-active-selected-after-ops",
+      "keywords": ["active_object", "selected_objects", "Context", "bpy.ops"],
+      "tip": "Évite la dépendance à active/selected après bpy.ops ; récupère la référence data ou recrée le contexte."
+    },
+    {
+      "id": "trackto-strict",
+      "keywords": ["Track To", "TRACK_NEGATIVE_Z", "UP_Y"],
+      "tip": "Axes stricts : track=TRACK_NEGATIVE_Z, up=UP_Y."
+    },
+    {
+      "id": "uvsphere-radius",
+      "keywords": ["uv sphere", "diameter", "create_uvsphere"],
+      "tip": "Utiliser radius (jamais diameter) sur les UV Spheres."
+    },
+    {
+      "id": "eevee-only",
+      "keywords": ["EEVEE_NEXT", "CYCLES", "render.engine"],
+      "tip": "Forcer BLENDER_EEVEE par défaut; fallback silencieux si indisponible."
+    },
+    {
+      "id": "nodes-output-input",
+      "keywords": ["NodeSocket", "link", "links.new"],
+      "tip": "Toujours lier Output -> Input ; vérifier l'existence des sockets par nom."
+    }
+  ]
+}

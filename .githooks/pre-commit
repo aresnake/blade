@@ -1,3 +1,24 @@
-#!/usr/bin/env bash
-powershell -NoProfile -ExecutionPolicy Bypass -File "$(dirname "$0")/pre-commit.ps1"
-exit $?
+#!/usr/bin/env sh
+echo "[hook] ruff check ares (warn-only)"
+if command -v ruff >/dev/null 2>&1; then
+  ruff check ares || echo "::warning ::ruff found issues (not blocking)"
+else
+  echo "[hook] ruff introuvable -> skip"
+fi
+echo "[hook] python -m py_compile (ares)"
+python - << "PY"
+import sys, os, py_compile
+bad = False
+for root, _, files in os.walk("ares"):
+    for f in files:
+        if f.endswith(".py"):
+            p = os.path.join(root, f)
+            try:
+                py_compile.compile(p, doraise=True)
+            except Exception as e:
+                print("PY_COMPILE_FAIL:", p, e); bad = True
+sys.exit(1 if bad else 0)
+PY
+[ $? -ne 0 ] && exit 1
+echo "[hook] OK"
+exit 0
