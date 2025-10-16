@@ -1,7 +1,12 @@
 ﻿# tests/smoke_helpers.py — Blade v13
-# Vérifie helpers de base (engine/materials/objects) en headless.
+# Injecte la racine du repo dans sys.path pour importer ares/ depuis tests/
+import sys, os
+from pathlib import Path
 
-import sys
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 try:
     import bpy
 except Exception as e:
@@ -10,7 +15,7 @@ except Exception as e:
 
 from ares.helpers import select_engine, ensure_material, assign_material, create_mesh_object
 
-print("[HELPERS] Blender:", bpy.app.version_string)
+print("[HELPERS] Blender:", getattr(__import__("bpy").app, "version_string", "?"))
 
 # 1) Engine select (ne doit pas lever)
 eng = select_engine()
