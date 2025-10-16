@@ -58,10 +58,25 @@ def apply_output_preset(config_path: str = "config/render_output_defaults.yaml")
         pass
     res["file_format"] = getattr(out.image_settings, "file_format", None)
 
-    # 3) Filepath + extension
-    _safe_set(out, "filepath", data.get("filepath", "//renders/out.mp4"))
+    # --- PATCH: extrait à coller dans ares/modules/render_bg/render_bg.py ---
+# ... (fichier complet déjà présent ; on remplace juste la partie filepath après lecture de data) ...
+    # 3) Filepath + extension (+ normalisation path locale)
+    raw_fp = data.get("filepath", "//renders/out.mp4")
+    try:
+        # Si Blender-style path //..., traduire vers dossier courant (racine du run)
+        if isinstance(raw_fp, str) and raw_fp.startswith("//"):
+            base = Path(bpy.path.abspath("//"))  # répertoire du .blend ou du process
+            norm = (base / raw_fp[2:]).resolve()
+        else:
+            norm = Path(raw_fp).resolve()
+        norm.parent.mkdir(parents=True, exist_ok=True)
+        out.filepath = str(norm)
+    except Exception:
+        # fallback simple
+        _safe_set(out, "filepath", raw_fp)
     _safe_set(out, "use_file_extension", bool(data.get("use_file_extension", True)))
     res["filepath"] = out.filepath
+# --- FIN PATCH ---
 
     # 4) FFmpeg block
     ff = getattr(out, "ffmpeg", None)
@@ -100,3 +115,4 @@ def apply_output_preset(config_path: str = "config/render_output_defaults.yaml")
         }
 
     return res
+
