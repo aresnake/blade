@@ -1,19 +1,33 @@
 ﻿param(
-  [ValidateSet('hello','check','clean')][string]$Task = 'check'
+  [ValidateSet("hello","check","clean","pack")]
+  [string]$Task = "check"
 )
 
 switch ($Task) {
-  'hello' { Write-Host 'Make: hello (v13 ready)' -ForegroundColor Green; break }
-  'check' {
-    Write-Host 'Make: check workspace' -ForegroundColor Cyan
-    'ares','config','tools','tests','resources','datasets','audio_samples','logs','summary','docs' | ForEach-Object {
-      if (-not (Test-Path )) { Write-Host ('❌ {0} manquant' -f ) -ForegroundColor Red } else { Write-Host ('✅ {0}' -f ) -ForegroundColor Green }
-    }
-    break
+  "hello" {
+    Write-Host "Make: hello (v13 ready)" -ForegroundColor Green
+    return
   }
-  'clean' {
-    Write-Host 'Make: clean temp/logs' -ForegroundColor Yellow
+  "check" {
+    Write-Host "Make: check workspace" -ForegroundColor Cyan
+    $dirs = @("ares","config","tools","tests","resources","datasets","audio_samples","logs","summary","docs")
+    foreach ($d in $dirs) {
+      if (Test-Path $d) {
+        Write-Host ("✅ {0}" -f $d) -ForegroundColor Green
+      } else {
+        Write-Host ("❌ {0} manquant" -f $d) -ForegroundColor Red
+      }
+    }
+    return
+  }
+  "clean" {
+    Write-Host "Make: clean temp/logs" -ForegroundColor Yellow
     Remove-Item -Recurse -Force .\logs\*,.\summary\* -ErrorAction SilentlyContinue
-    break
+    return
+  }
+  "pack" {
+    Write-Host "Make: pack add-on" -ForegroundColor Cyan
+    & powershell -NoProfile -File .\tools\Package.ps1
+    return
   }
 }
