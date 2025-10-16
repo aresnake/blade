@@ -17,3 +17,8 @@ build/
 logs/
 summary/
 tests/__pycache__/
+# local stuff
+renders/
+datasets/
+audit_*.csv
+config/render_output_overrides.yaml
