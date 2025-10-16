@@ -28,3 +28,9 @@ resources/temp/
 *.bak
 
 renders/
+
+dist/
+
+audit_*.csv
+
+config/render_output_overrides.yaml
