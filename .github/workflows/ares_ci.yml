@@ -35,31 +35,31 @@ PY
     if: startsWith(github.ref, 'refs/heads/dev') || startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
-
-      - name: Determine version (tag or dev sha)
+      - name: Determine version
         id: ver
-        shell: bash
         run: |
+          ver="0.0.0"
+          if [ -f ares/__init__.py ]; then
+            ver=$(python - <<'PY'
+import re, io
+t = io.open('ares/__init__.py','r',encoding='utf-8').read()
+m = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", t)
+print(m.group(1) if m else '0.0.0')
+PY
+)
+          fi
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            ver="${GITHUB_REF#refs/tags/}"
-            ver="${ver#v}"
-          else
-            ver="dev-${GITHUB_SHA:0:7}"
+            ver="${GITHUB_REF#refs/tags/}"; ver="${ver#v}"
           fi
           echo "version=$ver" >> "$GITHUB_OUTPUT"
-
       - name: Build zip (clean)
-        shell: bash
         run: |
-          set -e
           mkdir -p dist
           ZIP_NAME="blade_ares-${{ steps.ver.outputs.version }}.zip"
-          echo "Packing dist/$ZIP_NAME"
           zip -r "dist/$ZIP_NAME" ares \
             -x "ares/**/__pycache__/*" "ares/**/*.pyc" "ares/**/*.pyo" "ares/**/*.bak" "ares/**/*.orig"
           [ -f README.md ] && zip -u "dist/$ZIP_NAME" README.md
           ls -la dist
-
       - name: Upload artifact (dev)
         if: startsWith(github.ref, 'refs/heads/dev')
         uses: actions/upload-artifact@v4
@@ -75,24 +75,18 @@ PY
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
-
       - name: Determine version (from tag)
         id: ver
-        shell: bash
         run: |
           ver="${GITHUB_REF#refs/tags/}"; ver="${ver#v}"
           echo "version=$ver" >> "$GITHUB_OUTPUT"
-
       - name: Rebuild zip
-        shell: bash
         run: |
-          set -e
           mkdir -p dist
           ZIP_NAME="blade_ares-${{ steps.ver.outputs.version }}.zip"
           zip -r "dist/$ZIP_NAME" ares \
             -x "ares/**/__pycache__/*" "ares/**/*.pyc" "ares/**/*.pyo" "ares/**/*.bak" "ares/**/*.orig"
           [ -f README.md ] && zip -u "dist/$ZIP_NAME" README.md
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
