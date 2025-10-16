@@ -1,0 +1,16 @@
+﻿# Blade v13 — turntable presets
+FAST:
+  seconds: 0.75
+  fps: 24
+  radius: 2.2
+  samples: 16
+NORMAL:
+  seconds: 2.0
+  fps: 24
+  radius: 2.5
+  samples: 32
+FULL:
+  seconds: 4.0
+  fps: 24
+  radius: 3.0
+  samples: 64
