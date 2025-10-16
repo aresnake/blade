@@ -220,3 +220,12 @@ if __name__ == "__main__":
     register()
 
 __version__ = "13.0.0-test"
+
+
+# --- ARES UI auto-register (safe) ---
+try:
+    from .ui import panel_turntable as _ui_turn
+    if hasattr(_ui_turn, "register"):
+        _ui_turn.register()
+except Exception as _e:
+    print("[ARES][UI] panel_turntable not loaded:", _e)
