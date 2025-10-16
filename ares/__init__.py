@@ -1,4 +1,4 @@
-﻿bl_info = {
+bl_info = {
     "name": "ARES Blade Panel",
     "author": "Adrien + ARES",
     "version": (0, 1, 0),
