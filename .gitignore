@@ -26,3 +26,5 @@ resources/temp/
 *.log
 *.tmp
 *.bak
+
+renders/
