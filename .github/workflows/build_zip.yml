@@ -1,0 +1,118 @@
+name: Build & Release ARES
+
+on:
+  push:
+    branches: [ "dev" ]
+    tags:     [ "v*" ]
+  workflow_dispatch:
+
+jobs:
+  build_dev:
+    name: Build ZIP (dev)
+    if: startsWith(github.ref, 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: ver
+        shell: bash
+        run: |
+          set -e
+          ver="0.0.0"
+          if [ -f "ares/__init__.py" ]; then
+            ver="$(python3 - <<'PY'
+import re
+try:
+  t=open("ares/__init__.py","r",encoding="utf-8").read()
+  m=re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", t)
+  print(m.group(1) if m else "0.0.0")
+except Exception:
+  print("0.0.0")
+PY
+)"
+          fi
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare dist
+        run: |
+          rm -rf dist && mkdir -p dist
+
+      - name: Build zip (clean)
+        run: |
+          ZIP_NAME="blade_ares-${{ steps.ver.outputs.version }}.zip"
+          echo "Packing -> dist/${ZIP_NAME}"
+          zip -r "dist/${ZIP_NAME}" ares \
+            -x "ares/**/__pycache__/*" \
+               "ares/**/*.pyc" \
+               "ares/**/*.pyo" \
+               "ares/**/*.orig" \
+               "ares/**/*.bak"
+          if [ -f README.md ]; then zip -u "dist/${ZIP_NAME}" README.md; fi
+          if ls LICENSE* 1>/dev/null 2>&1; then zip -u "dist/${ZIP_NAME}" LICENSE*; fi
+          ls -la dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blade_ares-${{ steps.ver.outputs.version }}.zip
+          path: dist/*.zip
+          if-no-files-found: error
+
+  release_tag:
+    name: Release on tag
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine version (from tag or file)
+        id: ver
+        shell: bash
+        run: |
+          set -e
+          ref="${GITHUB_REF##*/}"   # e.g. v13.0.1
+          tag="${ref#v}"
+          ver="$tag"
+          if [ -z "$ver" ] && [ -f "ares/__init__.py" ]; then
+            ver="$(python3 - <<'PY'
+import re
+try:
+  t=open("ares/__init__.py","r",encoding="utf-8").read()
+  m=re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", t)
+  print(m.group(1) if m else "0.0.0")
+except Exception:
+  print("0.0.0")
+PY
+)"
+          fi
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare dist
+        run: |
+          rm -rf dist && mkdir -p dist
+
+      - name: Build zip (clean)
+        run: |
+          ZIP_NAME="blade_ares-${{ steps.ver.outputs.version }}.zip"
+          echo "Packing -> dist/${ZIP_NAME}"
+          zip -r "dist/${ZIP_NAME}" ares \
+            -x "ares/**/__pycache__/*" \
+               "ares/**/*.pyc" \
+               "ares/**/*.pyo" \
+               "ares/**/*.orig" \
+               "ares/**/*.bak"
+          if [ -f README.md ]; then zip -u "dist/${ZIP_NAME}" README.md; fi
+          if ls LICENSE* 1>/dev/null 2>&1; then zip -u "dist/${ZIP_NAME}" LICENSE*; fi
+          ls -la dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: false
+          files: dist/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

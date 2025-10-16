@@ -1,36 +1,19 @@
-﻿# OS / éditeurs
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-
-# Python
+# Python caches
 __pycache__/
 *.pyc
-.venv/
-venv/
+*.pyo
 
-# Blender artefacts
-*.blend1
-*.blend2
-*.blend@
-*.blend~
-*.blend.lock
-*.blend.tmp
+# Build outputs
+dist/
+build/
+*.zip
 
-# Logs / datasets / artefacts volumineux
+# Editors/OS
+.vscode/
+.idea/
+.DS_Store
+
+# Logs/tests (si non utiles au zip)
 logs/
 summary/
-datasets/
-resources/temp/
-*.log
-*.tmp
-*.bak
-
-renders/
-
-dist/
-
-audit_*.csv
-
-config/render_output_overrides.yaml
+tests/__pycache__/
