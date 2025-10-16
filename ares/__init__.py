@@ -85,7 +85,8 @@ def make_curve_circle(name="TT_Path", radius=3.0):
 
 def ensure_world_settings(scene=None):
     scene = scene or bpy.context.scene
-    scene.render.engine = 'BLENDER_EEVEE'
+    from .helpers import engine as ares_engine
+ares_engine.ensure_engine(bpy, scene)
     try:
         scene.eevee.use_bloom = True
     except Exception:
