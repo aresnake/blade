@@ -224,8 +224,11 @@ __version__ = "13.0.0-test"
 
 # --- ARES UI auto-register (safe) ---
 try:
+    import bpy
     from .ui import panel_turntable as _ui_turn
-    if hasattr(_ui_turn, "register"):
+    # Évite le double-register si déjà présent dans bpy.types
+    if not hasattr(bpy.types, "ARES_OT_CreateTurntable"):
         _ui_turn.register()
 except Exception as _e:
     print("[ARES][UI] panel_turntable not loaded:", _e)
+

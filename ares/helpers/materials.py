@@ -1,4 +1,4 @@
-﻿# Blade v13 — helpers.materials
+# Blade v13 — helpers.materials
 # Never Again: toujours garantir un Material Output et éviter toute référence supprimée.
 import bpy
 
@@ -21,7 +21,7 @@ def ensure_material(name="Material", use_nodes=True):
             bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
             bsdf.location = (0, 0)
         # Lien Output ← Principled si non relié
-        has_link = any(l.to_node == out and l.to_socket.name == "Surface" for l in nt.links)
+        has_link = any(link.to_node == out and link.to_socket.name == "Surface" for link in nt.links)
         if not has_link:
             nt.links.new(bsdf.outputs.get("BSDF"), out.inputs.get("Surface"))
     return mat
