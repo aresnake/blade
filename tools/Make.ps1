@@ -1,4 +1,8 @@
-﻿param(
+﻿# === Preflight shell ===
+. "$PSScriptRoot\ShellInfo.ps1"
+$__si = Get-BladeShellInfo
+Write-Host ("Shell: {0} | Zip: {1}" -f $__si.Edition + " " + $__si.Version, $__si.ZipStrategy) -ForegroundColor DarkCyan
+param(
   [ValidateSet("hello","check","clean","pack")]
   [string]$Task = "check"
 )
@@ -31,3 +35,4 @@ switch ($Task) {
     return
   }
 }
+
