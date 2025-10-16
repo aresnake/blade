@@ -1,18 +1,21 @@
 param(
   [string]$Tag = '',
-  [string]$ZipPath = ''
+  [string]$ZipPath = '',
+  [switch]$SkipBuild
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
-# 1) Build du ZIP si non fourni
+# 1) ZIP: utilise celui fourni, sinon (sauf SkipBuild) rebuild puis prend le plus récent
 if (-not $ZipPath) {
-  & .\make_zip.ps1 | Write-Host
+  if (-not $SkipBuild) {
+    & .\make_zip.ps1 | Write-Host
+  }
   $dist = Join-Path (Join-Path $PSScriptRoot '..') 'dist'
   $zip  = Get-ChildItem $dist\*.zip | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-  if (-not $zip) { throw 'Aucun ZIP trouvé après build.' }
+  if (-not $zip) { throw 'Aucun ZIP trouvé. Fournis -ZipPath ou enlève -SkipBuild.' }
   $ZipPath = $zip.FullName
 }
 
@@ -27,12 +30,24 @@ if (-not $Tag -or $Tag -eq '') {
   }
 }
 
-# 3) Création tag + push (idempotent)
-git tag $Tag 2>$null
-git push origin $Tag
+# 3) Tag idempotent (ne crée/pousse que s'il n'existe pas)
+$null = & git rev-parse -q --verify "refs/tags/$Tag" 2>$null
+$hasTag = ($LASTEXITCODE -eq 0)
+if ($hasTag) {
+  Write-Host "ℹ️  Tag '$Tag' existe déjà — on ne le recrée pas."
+} else {
+  git tag $Tag
+  git push origin $Tag
+}
 
-# 4) Create or upload release
-$exists = (& gh release view $Tag *> $null; $?)
+# 4) Create or upload release — détection silencieuse via Start-Process (temp files)
+$tfOut = [System.IO.Path]::GetTempFileName()
+$tfErr = [System.IO.Path]::GetTempFileName()
+$proc  = Start-Process -FilePath gh -ArgumentList @("release","view",$Tag) -NoNewWindow -Wait -PassThru `
+         -RedirectStandardOutput $tfOut -RedirectStandardError $tfErr
+$exists = ($proc.ExitCode -eq 0)
+Remove-Item -ErrorAction SilentlyContinue $tfOut, $tfErr
+
 if ($exists) {
   gh release upload $Tag "$ZipPath" --clobber
 } else {
