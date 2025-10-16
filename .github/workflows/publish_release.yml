@@ -1,0 +1,30 @@
+name: Publish Release (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (ex: 13.0.5)"
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build zip
+        run: |
+          mkdir -p dist
+          ZIP_NAME="blade_ares-${{ github.event.inputs.version }}.zip"
+          zip -r "dist/$ZIP_NAME" ares \
+            -x "ares/**/__pycache__/*" "ares/**/*.pyc" "ares/**/*.pyo" "ares/**/*.bak" "ares/**/*.orig"
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: v${{ github.event.inputs.version }}
+          draft: false
+          prerelease: false
+          files: dist/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
