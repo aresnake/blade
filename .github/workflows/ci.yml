@@ -13,6 +13,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   BLENDER_URL: https://download.blender.org/release/Blender4.5/blender-4.5.3-windows-x64.zip
 
@@ -65,6 +69,21 @@ jobs:
         run: |
           PYTHONPATH=. pytest -q
 
+      - name: Read add-on version
+        id: meta
+        run: |
+          python - <<'PY'
+          import re, pathlib, sys
+          init = pathlib.Path('ares/__init__.py')
+          version = '0.0.0'
+          if init.exists():
+            m = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", init.read_text('utf-8', errors='ignore'))
+            if m: version = m.group(1)
+          print('VERSION='+version)
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
+            f.write(f"version={version}\n")
+          PY
+
       - name: Build add-on ZIP
         run: |
           python - <<'PY'
@@ -94,7 +113,7 @@ jobs:
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
-          name: blade_ares-zip
+          name: blade_ares-${{ steps.meta.outputs.version }}
           path: dist/*.zip
           if-no-files-found: error
           retention-days: 14
@@ -103,6 +122,11 @@ jobs:
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ github.ref_name }}
+          body: |
+            Automated release from CI.
+            - Tag: ${{ github.ref_name }}
+            - Add-on version: ${{ steps.meta.outputs.version }}
           files: dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
