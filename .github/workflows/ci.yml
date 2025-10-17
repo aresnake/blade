@@ -3,11 +3,18 @@ name: CI
 on:
   push:
     branches: ["**"]
+    paths-ignore:
+      - "README.md"
+      - "docs/**"
+      - ".githooks/**"
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: write
+
+env:
+  BLENDER_URL: https://download.blender.org/release/Blender4.5/blender-4.5.3-windows-x64.zip
 
 jobs:
   build:
@@ -99,6 +106,7 @@ jobs:
           files: dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   smoke_blender:
     name: Smoke Blender headless (Windows)
     runs-on: windows-latest
@@ -111,9 +119,8 @@ jobs:
         continue-on-error: true
         run: |
           $ErrorActionPreference = 'Stop'
-          $url = 'https://download.blender.org/release/Blender4.5/blender-4.5.3-windows-x64.zip'
           $zip = "$env:RUNNER_TEMP\blender.zip"
-          Invoke-WebRequest -Uri $url -OutFile $zip
+          Invoke-WebRequest -Uri $env:BLENDER_URL -OutFile $zip
           Expand-Archive -LiteralPath $zip -DestinationPath $env:RUNNER_TEMP -Force
           Get-ChildItem $env:RUNNER_TEMP -Name
 
