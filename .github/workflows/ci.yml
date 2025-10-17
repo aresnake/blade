@@ -2,9 +2,12 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ['**']
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: write  # nécessaire pour publier une Release avec GITHUB_TOKEN
 
 jobs:
   build:
@@ -16,8 +19,8 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: "pip"
+          python-version: '3.11'
+          cache: 'pip'
 
       - name: Install tooling
         run: |
@@ -25,8 +28,8 @@ jobs:
           pip install ruff yamllint
 
       - name: Smoke-compile Python (fail on real errors)
-        shell: python
         run: |
+          python - <<'PY'
           import os, sys, compileall, pathlib
           root = pathlib.Path.cwd()
           targets = [p for p in (root/'ares', root/'tools') if p.exists()]
@@ -38,6 +41,7 @@ jobs:
             print(f"[compile] {t}")
             ok &= compileall.compile_dir(str(t), maxlevels=10, quiet=1)
           sys.exit(0 if ok else 1)
+          PY
 
       - name: Lint (warn-only)
         continue-on-error: true
@@ -50,14 +54,14 @@ jobs:
           yamllint -s . || true
 
       - name: Build add-on ZIP
-        shell: python
         run: |
-          import os, re, zipfile, pathlib
+          python - <<'PY'
+          import re, zipfile, pathlib, sys
           root = pathlib.Path.cwd()
           pkg = root/'ares'
           if not pkg.exists():
             print("::error::Missing 'ares/' package; cannot build zip.")
-            raise SystemExit(1)
+            sys.exit(1)
 
           version = "0.0.0"
           init_path = pkg/'__init__.py'
@@ -73,9 +77,11 @@ jobs:
 
           with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as z:
             for p in pkg.rglob('*'):
-              z.write(p, p.as_posix())
+              if p.is_file():
+                z.write(p, p.as_posix())
 
           print(f"::notice::Built {zip_path}")
+          PY
 
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
