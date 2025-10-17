@@ -55,15 +55,12 @@ jobs:
           mkdir ci -ea 0
           if (-not (Test-Path 'ci/last.txt')) { New-Item -ItemType File -Path 'ci/last.txt' | Out-Null }
           "=== Blender smoke (Windows) ===" | Tee-Object -FilePath 'ci/last.txt' -Append | Out-Null
-
           $blenderDir = Get-ChildItem $env:RUNNER_TEMP -Directory | Where-Object { $_.Name -like 'blender-4.*-windows-x64*' } | Select-Object -First 1
           if (-not $blenderDir) { '::warning::Blender folder not found' | Tee-Object -FilePath 'ci/last.txt' -Append; exit 0 }
           $exe = Join-Path $blenderDir.FullName 'blender.exe'
           if (-not (Test-Path $exe)) { '::warning::blender.exe not found' | Tee-Object -FilePath 'ci/last.txt' -Append; exit 0 }
-
           $enable = Join-Path $env:GITHUB_WORKSPACE '.github\scripts\blender_enable_ares.py'
           if (-not (Test-Path $enable)) { '::warning::enable script missing' | Tee-Object -FilePath 'ci/last.txt' -Append; exit 0 }
-
           & $exe -b --python $enable 2>&1 | Tee-Object -FilePath 'ci/last.txt' -Append
 
   publish-ci-log:
@@ -93,7 +90,7 @@ jobs:
             date -u +"UTC: %Y-%m-%d %H:%M:%S"
           } >> ci/last.txt
 
-      - name: Push single-commit ci-logs branch (no history growth)
+      - name: push single-commit ci-logs branch (no history growth)
         shell: bash
         run: |
           git config user.name  "github-actions[bot]"
@@ -106,5 +103,10 @@ jobs:
           git commit -m "ci(log): update from run $GITHUB_RUN_ID"
           git push -f origin ci-logs-tmp:ci-logs
 
-      - name: Link
+      - name: Add link to Job Summary
+        shell: bash
+        run: echo "Logs: https://github.com/${GITHUB_REPOSITORY}/blob/ci-logs/ci/last.txt" >> $GITHUB_STEP_SUMMARY
+
+      - name: Link (stdout)
+        shell: bash
         run: echo "Logs: https://github.com/${GITHUB_REPOSITORY}/blob/ci-logs/ci/last.txt"
