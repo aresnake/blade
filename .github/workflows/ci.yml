@@ -99,3 +99,30 @@ jobs:
           files: dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  smoke_blender:
+    name: Smoke Blender headless (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Blender (portable)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = 'https://download.blender.org/release/Blender4.5/blender-4.5.3-windows-x64.zip'
+          $zip = "$env:RUNNER_TEMP\blender.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -LiteralPath $zip -DestinationPath $env:RUNNER_TEMP -Force
+          Get-ChildItem $env:RUNNER_TEMP -Name
+
+      - name: Run smoke import
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $blenderDir = Get-ChildItem $env:RUNNER_TEMP -Directory | Where-Object { $_.Name -like 'blender-4.5.*-windows-x64' } | Select-Object -First 1
+          if (-not $blenderDir) { Write-Host '::warning::Blender folder not found'; exit 0 }
+          $exe = Join-Path $blenderDir.FullName 'blender.exe'
+          if (-not (Test-Path $exe)) { Write-Host '::warning::blender.exe not found'; exit 0 }
+          & $exe -b --python-expr "import sys; sys.path.append(r'${{ github.workspace }}'); import ares; print('[ARES]', getattr(ares,'__version__','n/a'))"
