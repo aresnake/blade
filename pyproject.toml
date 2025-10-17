@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blade-ares"
+version = "0.0.0"  # source of truth conservée dans ares/__init__.py pour l'instant
+requires-python = ">=3.10"
+description = "Blade ARES Blender add-on"
+readme = "README.md"
+authors = [{ name = "Adrien" }]
+license = { text = "MIT" }
+
+[tool.setuptools]
+packages = ["ares"]
