@@ -2,6 +2,7 @@
 # Sélection moteur robuste (EEVEE → EEVEE_NEXT → WORKBENCH → CYCLES)
 import bpy
 
+
 def select_engine(scene=None):
     if scene is None:
         scene = bpy.context.scene

@@ -1,4 +1,4 @@
-﻿# Blade v13 — render output defaults (mp4 H.264 + AAC via FFmpeg)
+# Blade v13 — render output defaults (mp4 H.264 + AAC via FFmpeg)
 format: "FFMPEG"
 filepath: "//renders/out.mp4"   # relatif au .blend
 use_file_extension: true

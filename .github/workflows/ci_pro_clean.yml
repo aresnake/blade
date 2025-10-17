@@ -1,4 +1,4 @@
-﻿name: CI (pro, clean, with single log)
+name: CI (pro, clean, with single log)
 
 on:
   push:

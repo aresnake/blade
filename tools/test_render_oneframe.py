@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
-import os
-import bpy
 import importlib
+import os
+
+import bpy
 
 # Import depuis le repo local si possible
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -9,6 +9,7 @@ if BASE not in os.sys.path:
     os.sys.path.insert(0, BASE)
 
 import ares
+
 importlib.reload(ares)
 from ares.modules import turntable_gen as tt
 

@@ -1,13 +1,14 @@
-﻿"""
+"""
 Blade v13 — render_bg demo
 - Construit une mini scène (caméra+light+triangle mesh data-first).
 - Applique preset FFMPEG mp4 (H.264 + AAC).
 - Rend une mini animation (5 frames) en headless.
 """
 import bpy
-from mathutils import Vector
-from ares.helpers import select_engine, create_mesh_object, ensure_material, assign_material
+
+from ares.helpers import assign_material, create_mesh_object, ensure_material, select_engine
 from ares.modules.render_bg import apply_output_preset
+
 
 def _ensure_camera():
     cam = next((o for o in bpy.data.objects if o.type == "CAMERA"), None)

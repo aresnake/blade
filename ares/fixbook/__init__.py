@@ -1,6 +1,8 @@
-# -*- coding: utf-8 -*-
 """ARES FixBook — squelette minimal."""
-import json, os, datetime, pathlib
+import datetime
+import json
+import os
+import pathlib
 
 _FIX_DIR = pathlib.Path(__file__).parent
 _BANK = _FIX_DIR / "bank_4_5.json"

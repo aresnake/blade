@@ -1,5 +1,6 @@
-﻿# Blade v13 — helpers.objects (patch: create_cube)
+# Blade v13 — helpers.objects (patch: create_cube)
 import bpy
+
 
 def safe_set(obj, prop, value):
     try:

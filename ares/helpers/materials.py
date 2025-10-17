@@ -2,6 +2,7 @@
 # Never Again: toujours garantir un Material Output et éviter toute référence supprimée.
 import bpy
 
+
 def ensure_material(name="Material", use_nodes=True):
     """Retourne un matériau existant ou en crée un propre (nodes optionnels)."""
     mat = bpy.data.materials.get(name)

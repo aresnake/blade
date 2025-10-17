@@ -1,4 +1,4 @@
-﻿# tests/smoke_blender.py — Blade v13
+# tests/smoke_blender.py — Blade v13
 # Objectif : valider un démarrage headless + réglages EEVEE/EEVEE_NEXT "safe".
 
 import sys

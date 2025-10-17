@@ -1,4 +1,4 @@
-﻿# ✅ Blade v13 — Import Checklist (par module / par lot)
+# ✅ Blade v13 — Import Checklist (par module / par lot)
 
 ## 0) Pré-vol
 - [ ] Source identifiée (chemin exact) et **taille totale** < 50 MB commitables.

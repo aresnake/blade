@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Turntable rig (ARES/Blade V13)
 - Empty TT_Rig following a NURBS circle TT_Path via Follow Path
@@ -8,7 +7,9 @@ Turntable rig (ARES/Blade V13)
 - Render engine: BLENDER_EEVEE
 - Data API only (no bpy.ops)
 """
+import contextlib
 import math
+
 import bpy
 
 
@@ -87,10 +88,8 @@ def create_turntable(scene=None, *, radius=6.0, height=2.0, path_duration=240, f
     follow = rig.constraints.new("FOLLOW_PATH")
     follow.target = path
     # Blender 4.5 may not expose use_fixed_position; we don't need it since we animate eval_time.
-    try:
+    with contextlib.suppress(Exception):
         follow.use_fixed_position = False
-    except Exception:
-        pass
 
     cam = link_object(new_camera("TT_Camera", (radius, 0.0, height)), rig_col)
     cam.parent = rig
@@ -108,10 +107,8 @@ def create_turntable(scene=None, *, radius=6.0, height=2.0, path_duration=240, f
     curve.eval_time = float(path_duration)
     curve.keyframe_insert(data_path="eval_time", frame=scene.frame_end)
 
-    try:
+    with contextlib.suppress(Exception):
         scene.camera = cam
-    except Exception:
-        pass
 
     return {
         "objects": {"target": target, "path": path, "rig": rig, "camera": cam},

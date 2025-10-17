@@ -1,4 +1,4 @@
-﻿# Blade v13 — QUICKSTART
+# Blade v13 — QUICKSTART
 
 ## 1) Turntable ultra-court
 powershell -NoProfile -File .\tools\Turntable.ps1 -Preset FAST -Out "renders/tt_fast.mp4"

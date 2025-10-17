@@ -1,5 +1,8 @@
-# -*- coding: utf-8 -*-
-import os, sys, json, importlib
+import importlib
+import json
+import os
+import sys
+
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BASE not in sys.path:
     sys.path.insert(0, BASE)

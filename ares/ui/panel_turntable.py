@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import bpy
 
 BL_CATEGORY = "ARES"
@@ -38,7 +37,7 @@ class ARES_PT_Turntable(bpy.types.Panel):
 
     def draw(self, context):
         col = self.layout.column(align=True)
-        op = col.operator("ares.create_turntable", icon="CAMERA_DATA", text="Create Turntable")
+        col.operator("ares.create_turntable", icon="CAMERA_DATA", text="Create Turntable")
 
 def register():
     bpy.utils.register_class(ARES_OT_CreateTurntable)

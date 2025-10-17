@@ -1,4 +1,4 @@
-﻿# Blade v13 — Socle & Règles
+# Blade v13 — Socle & Règles
 
 ## Objectif
 Base propre v13 pour (re)construire Blade/ARES sans dettes : arbo stricte, hooks qualité, imports sélectifs.

@@ -8,9 +8,11 @@ bl_info = {
     "category": "3D View",
 }
 
-import bpy
-import bmesh
+import contextlib
 from math import pi
+
+import bmesh
+import bpy
 from mathutils import Vector
 
 # -----------------------------
@@ -70,7 +72,7 @@ def make_curve_circle(name="TT_Path", radius=3.0):
         (-radius, 0.0, 0.0, 1.0),
         ( 0.0, -radius, 0.0, 1.0),
     ]
-    for p, co in zip(spline.points, coords):
+    for p, co in zip(spline.points, coords, strict=False):
         p.co = co
         p.weight = 1.0
     spline.order_u = 4
@@ -87,10 +89,8 @@ def ensure_world_settings(scene=None):
     scene = scene or bpy.context.scene
     from .helpers import engine as ares_engine
     ares_engine.ensure_engine(bpy, scene)
-    try:
+    with contextlib.suppress(Exception):
         scene.eevee.use_bloom = True
-    except Exception:
-        pass
     return scene
 
 # ---------------------------------
@@ -98,7 +98,7 @@ def ensure_world_settings(scene=None):
 # ---------------------------------
 
 def build_turntable(radius=3.0, cam_height=1.6, fov_deg=50.0):
-    scene = ensure_world_settings()
+    ensure_world_settings()
     path = bpy.data.objects.get("TT_Path") or make_curve_circle("TT_Path", radius=radius)
     rig = bpy.data.objects.get("TT_Rig")
     if not rig:
@@ -234,3 +234,5 @@ try:
 except Exception as _e:
     print("[ARES][UI] panel_turntable not loaded:", _e)
 
+
+__version__ = '13.0.0-test'

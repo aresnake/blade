@@ -1,9 +1,9 @@
-﻿"""
+"""
 Blade v13 — animals.simple
 - "Low-poly dog" composé de cubes, sans bpy.ops (data-first).
 """
-import bpy
-from ares.helpers import create_cube, link_object, ensure_material, assign_material
+from ares.helpers import assign_material, create_cube, ensure_material
+
 
 def _cube(name, size, loc):
     obj = create_cube(name=name, size=size)

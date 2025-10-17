@@ -1,4 +1,4 @@
-﻿# Plan d'import v13 (sélectif)
+# Plan d'import v13 (sélectif)
 
 ## Sources locales
 - D:\BLADE
