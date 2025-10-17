@@ -2,12 +2,12 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: write  # nécessaire pour publier une Release avec GITHUB_TOKEN
+  contents: write
 
 jobs:
   build:
@@ -19,13 +19,13 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install tooling
         run: |
           python -m pip install --upgrade pip
-          pip install ruff yamllint
+          pip install -r requirements.txt
 
       - name: Smoke-compile Python (fail on real errors)
         run: |
@@ -53,6 +53,11 @@ jobs:
           fi
           yamllint -s . || true
 
+      - name: Pytest (warn-only first pass)
+        continue-on-error: true
+        run: |
+          pytest -q
+
       - name: Build add-on ZIP
         run: |
           python - <<'PY'
@@ -62,7 +67,6 @@ jobs:
           if not pkg.exists():
             print("::error::Missing 'ares/' package; cannot build zip.")
             sys.exit(1)
-
           version = "0.0.0"
           init_path = pkg/'__init__.py'
           if init_path.exists():
@@ -70,16 +74,13 @@ jobs:
             m = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", text)
             if m:
               version = m.group(1)
-
           dist = root/'dist'
           dist.mkdir(exist_ok=True)
           zip_path = dist/f"blade_ares-{version}.zip"
-
           with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as z:
             for p in pkg.rglob('*'):
               if p.is_file():
                 z.write(p, p.as_posix())
-
           print(f"::notice::Built {zip_path}")
           PY
 
@@ -91,7 +92,7 @@ jobs:
           if-no-files-found: error
 
       - name: Release on tag
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, "refs/tags/")
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.zip
