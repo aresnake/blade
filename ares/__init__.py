@@ -1,4 +1,4 @@
-bl_info = {
+﻿bl_info = {
     "name": "ARES Blade Panel",
     "author": "Adrien + ARES",
     "version": (0, 1, 0),
@@ -33,7 +33,9 @@ def make_mesh_object(name, verts, faces):
     obj = bpy.data.objects.new(name, me)
     return link_object(obj)
 
-def make_box(name, size=1.0, center=Vector((0,0,0))):
+def make_box(name, size=1.0, center=None):
+    if center is None:
+        center = Vector((0, 0, 0))
     s = size * 0.5
     v = [
         center + Vector((-s,-s,-s)), center + Vector(( s,-s,-s)),
@@ -44,7 +46,9 @@ def make_box(name, size=1.0, center=Vector((0,0,0))):
     f = [(0,1,2,3),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
     return make_mesh_object(name, v, f)
 
-def make_uvsphere(name, radius=0.2, segments=16, rings=8, center=Vector((0,0,0))):
+def make_uvsphere(name, radius=0.2, segments=16, rings=8, center=None):
+    if center is None:
+        center = Vector((0, 0, 0))
     me = bpy.data.meshes.new(name + "_mesh")
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(
@@ -236,3 +240,4 @@ except Exception as _e:
 
 
 __version__ = '13.0.0-test'
+

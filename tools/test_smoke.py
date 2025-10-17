@@ -1,4 +1,4 @@
-import importlib
+﻿import importlib
 import json
 import os
 import sys
@@ -12,7 +12,8 @@ try:
     importlib.reload(ares)
     from ares.modules import turntable_gen as tt
 except Exception as e:
-    print("[SMOKE] import KO:", e); sys.exit(2)
+    print('[SMOKE] import KO:', e)
+    sys.exit(2)
 
 try:
     res = tt.create_turntable(radius=6.0, height=2.0, path_duration=120, fps=24)
@@ -25,4 +26,6 @@ try:
         "base": BASE
     }, ensure_ascii=False))
 except Exception as e:
-    print("[SMOKE] build KO:", e); sys.exit(3)
+    print('[SMOKE] build KO:', e)
+    sys.exit(3)
+

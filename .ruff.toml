@@ -1,4 +1,8 @@
-line-length = 100
+﻿line-length = 100
+target-version = "py311"
+
+
+    $blk = line-length = 100
 target-version = "py311"
 
 [lint]
@@ -9,3 +13,18 @@ ignore = []
 [lint.per-file-ignores]
 # Autoriser import non utilisé dans __init__ (exposer API)
 "ares/__init__.py" = ["F401"]
+
+line-length = 120
+.Groups[1].Value
+    if ($blk -notmatch 'ignore') { $blk += "`nignore = [""E402""]`n" }
+    if ($blk -notmatch 'select') { $blk += "`nselect = [""E"",""F"",""W"",""B"",""I"",""UP"",""SIM""]`n" }
+    $blk
+  ["E","F","W","I","UP","B","SIM"]
+ignore = []
+
+[lint.per-file-ignores]
+# Autoriser import non utilisé dans __init__ (exposer API)
+"ares/__init__.py" = ["F401"]
+
+line-length = 120
+
