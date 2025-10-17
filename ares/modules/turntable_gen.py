@@ -1,4 +1,4 @@
-"""
+﻿"""
 Turntable rig (ARES/Blade V13)
 - Empty TT_Rig following a NURBS circle TT_Path via Follow Path
 - Camera parented to TT_Rig (radius, 0, height)
@@ -66,11 +66,10 @@ def new_nurbs_circle_path(name, radius=5.0):
 
 
 def set_render_engine(scene, engine="BLENDER_EEVEE"):
-    try:
+    pass
+
+with suppress(Exception):
         scene.render.engine = engine
-    except Exception:
-        # ignore if engine not available
-        pass
 
 
 def create_turntable(scene=None, *, radius=6.0, height=2.0, path_duration=240, fps=24):
@@ -120,3 +119,4 @@ def create_turntable(scene=None, *, radius=6.0, height=2.0, path_duration=240, f
             "path_duration": curve.path_duration,
         },
     }
+
