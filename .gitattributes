@@ -1,3 +1,9 @@
 * text=auto eol=lf
-*.ps1 text eol=crlf
-*.bat text eol=crlf
+
+# Garder CRLF pour scripts PowerShell
+*.ps1 eol=crlf
+
+# Exclure de git archive (et souvent des releases zip)
+.github/ export-ignore
+tests/  export-ignore
+.githooks/ export-ignore
