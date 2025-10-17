@@ -68,7 +68,9 @@ def new_nurbs_circle_path(name, radius=5.0):
 def set_render_engine(scene, engine="BLENDER_EEVEE"):
     pass
 
-with suppress(Exception):
+def set_render_engine(scene, engine="BLENDER_EEVEE"):
+    from contextlib import suppress
+    with suppress(Exception):
         scene.render.engine = engine
 
 
@@ -119,4 +121,5 @@ def create_turntable(scene=None, *, radius=6.0, height=2.0, path_duration=240, f
             "path_duration": curve.path_duration,
         },
     }
+
 
