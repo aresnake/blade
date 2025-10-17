@@ -1,0 +1,110 @@
+﻿name: CI (pro, clean, with single log)
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install ruff
+        run: pip install ruff
+      - name: Ruff check (warn-only)
+        shell: bash
+        continue-on-error: true
+        run: |
+          chmod +x .github/scripts/tee_ci.sh
+          .github/scripts/tee_ci.sh "Ruff check" ruff check ares
+
+  tests:
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install pytest
+        run: pip install -r requirements.txt || true; pip install pytest
+      - name: Pytest (warn-only)
+        shell: bash
+        continue-on-error: true
+        run: |
+          chmod +x .github/scripts/tee_ci.sh
+          .github/scripts/tee_ci.sh "Pytest" pytest -q
+
+  smoke:
+    runs-on: windows-latest
+    needs: [tests]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Blender smoke (import + enable) — warn-only
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          mkdir ci -ea 0
+          if (-not (Test-Path 'ci/last.txt')) { New-Item -ItemType File -Path 'ci/last.txt' | Out-Null }
+          "=== Blender smoke (Windows) ===" | Tee-Object -FilePath 'ci/last.txt' -Append | Out-Null
+
+          $blenderDir = Get-ChildItem $env:RUNNER_TEMP -Directory | Where-Object { $_.Name -like 'blender-4.*-windows-x64*' } | Select-Object -First 1
+          if (-not $blenderDir) { '::warning::Blender folder not found' | Tee-Object -FilePath 'ci/last.txt' -Append; exit 0 }
+          $exe = Join-Path $blenderDir.FullName 'blender.exe'
+          if (-not (Test-Path $exe)) { '::warning::blender.exe not found' | Tee-Object -FilePath 'ci/last.txt' -Append; exit 0 }
+
+          $enable = Join-Path $env:GITHUB_WORKSPACE '.github\scripts\blender_enable_ares.py'
+          if (-not (Test-Path $enable)) { '::warning::enable script missing' | Tee-Object -FilePath 'ci/last.txt' -Append; exit 0 }
+
+          & $exe -b --python $enable 2>&1 | Tee-Object -FilePath 'ci/last.txt' -Append
+
+  publish-ci-log:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [lint, tests, smoke]
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Finalize log (context)
+        shell: bash
+        run: |
+          mkdir -p ci
+          if [ ! -s ci/last.txt ]; then
+            echo "No captured output (empty)." > ci/last.txt
+          fi
+          {
+            echo
+            echo "=== Context ==="
+            echo "Repo: $GITHUB_REPOSITORY"
+            echo "Branch: $GITHUB_REF_NAME"
+            echo "Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "Lint:  ${{ needs.lint.result }}"
+            echo "Tests: ${{ needs.tests.result }}"
+            echo "Smoke: ${{ needs.smoke.result }}"
+            date -u +"UTC: %Y-%m-%d %H:%M:%S"
+          } >> ci/last.txt
+
+      - name: Push single-commit ci-logs branch (no history growth)
+        shell: bash
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan ci-logs-tmp
+          git reset --hard
+          mkdir -p ci
+          cp -f ci/last.txt ci/last.txt
+          git add ci/last.txt
+          git commit -m "ci(log): update from run $GITHUB_RUN_ID"
+          git push -f origin ci-logs-tmp:ci-logs
+
+      - name: Link
+        run: echo "Logs: https://github.com/${GITHUB_REPOSITORY}/blob/ci-logs/ci/last.txt"
