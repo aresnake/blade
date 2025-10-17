@@ -56,7 +56,7 @@ jobs:
       - name: Pytest (warn-only first pass)
         continue-on-error: true
         run: |
-          pytest -q
+          PYTHONPATH=. pytest -q
 
       - name: Build add-on ZIP
         run: |
@@ -90,6 +90,7 @@ jobs:
           name: blade_ares-zip
           path: dist/*.zip
           if-no-files-found: error
+          retention-days: 14
 
       - name: Release on tag
         if: github.ref_type == 'tag'
