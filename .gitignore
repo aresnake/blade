@@ -1,6 +1,14 @@
 # Rendus / rapports
 reports/
-reports/**
+renders/
+summary/
+logs/
+dist/
+datasets/
+
+# Audits / caches temporaires
+audit_*.csv
+config/render_output_overrides.yaml
 
 # Blender / caches
 *.blend1
