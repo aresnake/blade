@@ -1,9 +1,5 @@
-* text=auto eol=lf
-
-# Garder CRLF pour scripts PowerShell
-*.ps1 eol=crlf
-
-# Exclure de git archive (et souvent des releases zip)
-.github/ export-ignore
-tests/  export-ignore
-.githooks/ export-ignore
+# Normalisation par type de fichier
+*          text=auto
+*.py       text eol=lf
+*.toml     text eol=lf
+*.ps1      text eol=crlf
