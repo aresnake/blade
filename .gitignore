@@ -1,24 +1,9 @@
-# Python caches
+# Rendus / rapports
+reports/
+reports/**
+
+# Blender / caches
+*.blend1
+*.blend@
 __pycache__/
-*.pyc
-*.pyo
-
-# Build outputs
-dist/
-build/
-*.zip
-
-# Editors/OS
-.vscode/
-.idea/
-.DS_Store
-
-# Logs/tests (si non utiles au zip)
-logs/
-summary/
-tests/__pycache__/
-# local stuff
-renders/
-datasets/
-audit_*.csv
-config/render_output_overrides.yaml
+.ruff_cache/
