@@ -1,0 +1,40 @@
+name: tt-smoke
+on:
+  push:
+    branches: [ dev, main ]
+  workflow_dispatch:
+jobs:
+  render:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Blender 4.5.3
+        shell: pwsh
+        run: |
+          curl -L -o blender.zip https://mirror.clarkson.edu/blender/release/Blender4.5/blender-4.5.3-windows-x64.zip
+          Expand-Archive blender.zip -DestinationPath .
+          Rename-Item 'blender-4.5.3-windows-x64' 'bl'
+      - name: Render quick TT (3s @720p)
+        shell: pwsh
+        run: |
+          \D:\blender-4.5.3-clean\blender-4.5.3-windows-x64\blender.exe = (Resolve-Path .\\bl\\blender.exe).Path
+          \ = @'
+import sys,bpy,os
+sys.path.append(os.getcwd())
+import ares.modules.turntable_gen as T
+T.create_turntable(path_duration=72, fps=24); T.set_render_engine(bpy.context,'BLENDER_EEVEE_NEXT')
+s=bpy.context.scene; s.frame_start=1; s.frame_end=72; s.render.fps=24
+s.render.resolution_x=1280; s.render.resolution_y=720
+os.makedirs('renders/tt_ci', exist_ok=True)
+s.render.filepath=os.path.abspath('renders/tt_ci/out.mp4'); s.render.use_file_extension=False
+s.render.image_settings.file_format='FFMPEG'
+s.render.ffmpeg.format='MPEG4'; s.render.ffmpeg.codec='H264'
+s.render.ffmpeg.constant_rate_factor='MEDIUM'; s.render.ffmpeg.audio_codec='AAC'
+bpy.ops.render.render(animation=True)
+'@
+          & \D:\blender-4.5.3-clean\blender-4.5.3-windows-x64\blender.exe -b --factory-startup --python-expr \
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tt_ci_video
+          path: renders/tt_ci/out.mp4

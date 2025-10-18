@@ -1,49 +1,73 @@
-# -*- coding: utf-8 -*-
+# ARES Turntable UI (clean rewrite)
+# - safe_register / safe_unregister pour éviter les warnings headless
+# - Panel simple + opérateur pour créer un turntable via ares.modules.turntable_gen
+
 import bpy
 
-BL_CATEGORY = "ARES"
+# --- Safe (un)register helpers ------------------------------------------------
+def safe_register(cls):
+    try:
+        bpy.utils.unregister_class(cls)
+    except Exception:
+        pass
+    try:
+        bpy.utils.register_class(cls)
+    except ValueError:
+        # déjà présent ou état incohérent -> ignorer
+        pass
 
+def safe_unregister(cls):
+    try:
+        bpy.utils.unregister_class(cls)
+    except Exception:
+        pass
+
+# --- Operator -----------------------------------------------------------------
 class ARES_OT_CreateTurntable(bpy.types.Operator):
     bl_idname = "ares.create_turntable"
     bl_label = "Create Turntable"
-    bl_description = "Create a standard ARES turntable rig"
-    bl_options = {"REGISTER", "UNDO"}
-
-    radius: bpy.props.FloatProperty(name="Radius", default=6.0, min=0.1)
-    height: bpy.props.FloatProperty(name="Camera Height", default=2.0)
-    duration: bpy.props.IntProperty(name="Frames", default=240, min=1)
-    fps: bpy.props.IntProperty(name="FPS", default=24, min=1)
+    bl_description = "Create a quick turntable rig in the current scene"
 
     def execute(self, context):
         try:
-            from ares.modules import turntable_gen as tt
-            tt.create_turntable(
-                radius=self.radius,
-                height=self.height,
-                path_duration=self.duration,
-                fps=self.fps,
-            )
-            self.report({"INFO"}, "ARES turntable created")
-            return {"FINISHED"}
+            import sys
+            if r'D:\V13\workspace_v13' not in sys.path:
+                # En headless nos tests ajoutent ce path; en GUI mieux vaut être tolérant
+                sys.path.append(r'D:\V13\workspace_v13')
+            import ares.modules.turntable_gen as T
+            T.create_turntable()
+            try:
+                T.set_render_engine(context, 'BLENDER_EEVEE_NEXT')
+            except Exception:
+                pass
         except Exception as e:
-            self.report({"ERROR"}, f"ARES turntable failed: {e}")
-            return {"CANCELLED"}
+            self.report({'ERROR'}, f"ARES: {e}")
+            return {'CANCELLED'}
+        return {'FINISHED'}
 
-
+# --- Panel --------------------------------------------------------------------
 class ARES_PT_Turntable(bpy.types.Panel):
-    bl_label = "Turntable"
+    bl_idname = "ARES_PT_Turntable"
+    bl_label = "ARES • Turntable"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = BL_CATEGORY
+    bl_category = "ARES"
 
     def draw(self, context):
-        col = self.layout.column(align=True)
-        op = col.operator("ares.create_turntable", icon="CAMERA_DATA", text="Create Turntable")
+        layout = self.layout
+        col = layout.column(align=True)
+        col.operator("ares.create_turntable", icon="FILE_MOVIE", text="Create Turntable")
 
+# --- Addon registration -------------------------------------------------------
 def register():
-    bpy.utils.register_class(ARES_OT_CreateTurntable)
-    bpy.utils.register_class(ARES_PT_Turntable)
+    # ordre: opérateur, puis panel
+    safe_register(ARES_OT_CreateTurntable)
+    safe_register(ARES_PT_Turntable)
 
 def unregister():
-    bpy.utils.unregister_class(ARES_PT_Turntable)
-    bpy.utils.unregister_class(ARES_OT_CreateTurntable)
+    # ordre inverse
+    safe_unregister(ARES_PT_Turntable)
+    safe_unregister(ARES_OT_CreateTurntable)
+
+if __name__ == "__main__":
+    register()
