@@ -15,7 +15,10 @@ try:
     from .modules.render_bg.turntable_rig import _link_only_to_collection as link_object
 except Exception:
     link_object = None
-
+try:
+    from .modules.render_bg.turntable_rig import _add_circle_path as make_curve_circle
+except Exception:
+    make_curve_circle = None
 def _safe_register(mod):
     if hasattr(mod, "register"):
         try:
