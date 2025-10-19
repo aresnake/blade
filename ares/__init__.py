@@ -10,6 +10,7 @@ bl_info = {
 
 import importlib
 
+
 def _safe_register(mod):
     if hasattr(mod, "register"):
         mod.register()
