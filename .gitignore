@@ -1,24 +1,24 @@
-# Python caches
 __pycache__/
 *.pyc
-*.pyo
-
-# Build outputs
-dist/
-build/
-*.zip
-
-# Editors/OS
 .vscode/
 .idea/
-.DS_Store
-
-# Logs/tests (si non utiles au zip)
-logs/
-summary/
-tests/__pycache__/
-# local stuff
+*.blend1
+*.blend2
+*.blend@
+*.blend.tmp
+*.blend_backup
 renders/
-datasets/
-audit_*.csv
-config/render_output_overrides.yaml
+cache/
+*.exr
+*.png
+*.jpg
+*.jpeg
+*.tiff
+*.mov
+*.mp4
+*.wav
+logs/
+summary/*.log
+dist/
+.venv/
+.env

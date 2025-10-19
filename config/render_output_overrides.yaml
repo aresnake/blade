@@ -1,0 +1,7 @@
+# Blade v13 — output overrides (optionnels)
+resolution:
+  preset: "HD"        # "HD" | "FHD"
+  HD:   { x: 1280, y: 720,  percent: 100 }
+  FHD:  { x: 1920, y: 1080, percent: 100 }
+
+fps: 24               # si présent, on l’applique

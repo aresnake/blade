@@ -1,0 +1,12 @@
+{
+  "timestamp": "20251018_024138",
+  "blender_exe": "D:\\blender-4.5.3-clean\\blender-4.5.3-windows-x64\\blender.exe",
+  "sanity_png": "D:\\V13\\workspace_v13\\reports\\snapshots\\20251018_024138\\sanity.png",
+  "sanity_json": "D:\\V13\\workspace_v13\\reports\\snapshots\\20251018_024138\\sanity.json",
+  "counts": {
+    "md": 7,
+    "py": 28
+  },
+  "ruff_head": "tools\\blender_sanity.py:1:1: E401 [*] Multiple imports on one line\n  |\n1 | import bpy, json, sys, os, math\n  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ E401\n2 | from mathutils import Vector\n  |\n  = help: Split imports\n\ntools\\blender_sanity.py:1:1: I001 [*] Import block is un-sorted or un-formatted\n  |",
+  "git_head": "90873bc 2025-10-17 13:14:59 +0200 chore(turntable_gen): remove old duplicate set_render_engine definition (clean F811)"
+}
