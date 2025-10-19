@@ -30,3 +30,8 @@ ARESBlade.txt
 *ARESBlade*.txt
 \# --- Horodatage console (ARESBlade.txt
 summary/*.txt
+# ARES build artefacts
+reports/snapshots/
+reports/ares/
+.blank_scripts/
+.githooks_off/
