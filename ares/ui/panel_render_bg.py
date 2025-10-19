@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Path: ares/ui/panel_render_bg.py
+# Section: Render Still (forces PNG if video format is active)
 
 import contextlib
 import importlib
@@ -21,20 +22,8 @@ class ARES_RenderBG_Props(bpy.types.PropertyGroup):
         subtype="FILE_PATH",
         default="//renders/out.mp4",
     )
-    fps: IntProperty(
-        name="FPS",
-        description="Images par seconde",
-        min=1,
-        max=240,
-        default=24,
-    )
-    seconds: IntProperty(
-        name="Duration (s)",
-        description="Durée en secondes",
-        min=1,
-        max=600,
-        default=4,
-    )
+    fps: IntProperty(name="FPS", description="Images par seconde", min=1, max=240, default=24)
+    seconds: IntProperty(name="Duration (s)", description="Durée en secondes", min=1, max=600, default=4)
 
 
 # --- Operators -----------------------------------------------------------------
@@ -48,7 +37,6 @@ class ARES_OT_RenderBGApplyPreset(bpy.types.Operator):
     def execute(self, context):
         scn = context.scene
         d = PR.apply_mp4_preset(scn)
-
         ui = getattr(scn, "ares_renderbg", None)
         if ui is not None:
             scn.render.filepath = ui.output_path or d.get("filepath", "//renders/out.mp4")
@@ -58,16 +46,14 @@ class ARES_OT_RenderBGApplyPreset(bpy.types.Operator):
             scn.render.filepath = d.get("filepath", "//renders/out.mp4")
             scn.render.fps = int(d.get("fps", 24))
             seconds = int(d.get("seconds", 4))
-
         scn.frame_start = 1
         scn.frame_end = scn.frame_start + (seconds * scn.render.fps) - 1
-
         self.report({"INFO"}, "Preset OK")
         return {"FINISHED"}
 
 
 class ARES_OT_RenderBGRender(bpy.types.Operator):
-    """Lancer le rendu animation (encode MP4 H.264 selon le preset)."""
+    """Render de l'animation complète (frame_start→frame_end)."""
     bl_idname = "ares.render_bg_render_mp4"
     bl_label = "Render MP4"
     bl_options = {"REGISTER"}
@@ -75,6 +61,50 @@ class ARES_OT_RenderBGRender(bpy.types.Operator):
     def execute(self, context):
         bpy.ops.render.render(animation=True)
         self.report({"INFO"}, "Render MP4 terminé")
+        return {"FINISHED"}
+
+
+class ARES_OT_RenderBGRenderQuick(bpy.types.Operator):
+    """Render rapide ~1 seconde (utile pour les tests)."""
+    bl_idname = "ares.render_bg_render_quick"
+    bl_label = "Render Preview (1s)"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        scn = context.scene
+        fps = max(1, int(scn.render.fps))
+        orig_end = scn.frame_end
+        scn.frame_end = scn.frame_start + fps - 1
+        try:
+            bpy.ops.render.render(animation=True)
+        finally:
+            scn.frame_end = orig_end
+        self.report({"INFO"}, "Preview 1s terminé")
+        return {"FINISHED"}
+
+
+class ARES_OT_RenderBGRenderStill(bpy.types.Operator):
+    """Render d'une seule image — force temporairement PNG puis restaure."""
+    bl_idname = "ares.render_bg_render_still"
+    bl_label = "Render Still"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        scn = context.scene
+        r = scn.render
+        prev_fmt = r.image_settings.file_format
+        prev_fp = r.filepath
+        # Forcer PNG si format vidéo (FFMPEG)
+        if r.image_settings.file_format == "FFMPEG":
+            r.image_settings.file_format = "PNG"
+            if not prev_fp or prev_fp.lower().endswith(".mp4"):
+                r.filepath = "//renders/still.png"
+        try:
+            bpy.ops.render.render(write_still=True)
+        finally:
+            r.image_settings.file_format = prev_fmt
+            r.filepath = prev_fp
+        self.report({"INFO"}, "Still PNG OK")
         return {"FINISHED"}
 
 
@@ -102,6 +132,8 @@ class ARES_PT_RenderBG(bpy.types.Panel):
         row.prop(ui, "seconds")
         layout.separator()
         layout.operator("ares.render_bg_apply_preset", icon="SETTINGS")
+        layout.operator("ares.render_bg_render_still", icon="RENDER_STILL")
+        layout.operator("ares.render_bg_render_quick", icon="RENDER_ANIMATION")
         layout.operator("ares.render_bg_render_mp4", icon="RENDER_ANIMATION")
 
 
@@ -111,6 +143,8 @@ CLASSES = (
     ARES_RenderBG_Props,
     ARES_OT_RenderBGApplyPreset,
     ARES_OT_RenderBGRender,
+    ARES_OT_RenderBGRenderQuick,
+    ARES_OT_RenderBGRenderStill,
     ARES_PT_RenderBG,
 )
 
@@ -128,13 +162,11 @@ def _safe_unregister(cls):
 def register():
     for c in CLASSES:
         _safe_register(c)
-    # PointerProperty après l'enregistrement du PropertyGroup
     if not hasattr(bpy.types.Scene, "ares_renderbg"):
         bpy.types.Scene.ares_renderbg = PointerProperty(type=ARES_RenderBG_Props)
 
 
 def unregister():
-    # Supprimer le pointeur de Scene si présent
     if hasattr(bpy.types.Scene, "ares_renderbg"):
         with contextlib.suppress(Exception):
             del bpy.types.Scene.ares_renderbg
