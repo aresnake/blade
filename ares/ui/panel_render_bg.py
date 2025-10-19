@@ -1,87 +1,133 @@
-from __future__ import annotations
-
-import contextlib
+# SPDX-License-Identifier: MIT
+# Path: ares/ui/panel_render_bg.py
 
 import bpy
+import importlib
+from bpy.props import StringProperty, IntProperty, PointerProperty
 
+from ares.modules.render_bg import preset as PR
+importlib.reload(PR)
 
-def _ensure_scene_settings(scn: bpy.types.Scene, fps: int, seconds: int, filepath: str):
-    # Moteur Eevee (safe)
-    with contextlib.suppress(Exception):
-        scn.render.engine = "BLENDER_EEVEE"
+# --- Property Group (module-level, fiable) -------------------------------------
 
-    # Timeline
-    scn.render.fps = fps
-    scn.frame_start = 1
-    scn.frame_end = max(1, fps * max(1, seconds))
-
-    # Sortie vidéo MP4 / H.264
-    scn.render.filepath = filepath
-    scn.render.image_settings.file_format = "FFMPEG"
-    scn.render.ffmpeg.format = "MPEG4"
-    scn.render.ffmpeg.codec = "H264"
-    scn.render.ffmpeg.constant_rate_factor = "MEDIUM"
-    scn.render.ffmpeg.ffmpeg_preset = "GOOD"
-    scn.render.ffmpeg.audio_codec = "AAC"
-    scn.render.ffmpeg.audio_bitrate = 192000
-    scn.render.ffmpeg.gopsize = 12
-    # bitrate vidéo raisonnable
-    scn.render.ffmpeg.video_bitrate = 8000
-    scn.render.ffmpeg.maxrate = 12000
-
-
-class ARES_OT_RenderBG(bpy.types.Operator):
-    bl_idname = "ares.render_bg_mp4"
-    bl_label = "Render MP4 (H.264)"
-    bl_description = "Render animation to MP4 (H.264) with simple preset"
-
-    filepath: bpy.props.StringProperty(
+class ARES_RenderBG_Props(bpy.types.PropertyGroup):
+    output_path: StringProperty(
         name="Output",
-        subtype="FILE_PATH",
+        description="Chemin de sortie MP4 (H.264)",
+        subtype='FILE_PATH',
         default="//renders/out.mp4",
     )
-    seconds: bpy.props.IntProperty(name="Seconds", min=1, default=4)
-    fps: bpy.props.IntProperty(name="FPS", min=1, default=24)
+    fps: IntProperty(
+        name="FPS",
+        description="Images par seconde",
+        min=1, max=240,
+        default=24,
+    )
+    seconds: IntProperty(
+        name="Duration (s)",
+        description="Durée en secondes",
+        min=1, max=600,
+        default=4,
+    )
+
+# --- Operators -----------------------------------------------------------------
+
+class ARES_OT_RenderBGApplyPreset(bpy.types.Operator):
+    """Appliquer le preset MP4 (H.264) et caler la scène (EEVEE, fps, frames, chemin)."""
+    bl_idname = "ares.render_bg_apply_preset"
+    bl_label = "Apply MP4 Preset"
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         scn = context.scene
-        _ensure_scene_settings(scn, fps=self.fps, seconds=self.seconds, filepath=self.filepath)
+        d = PR.apply_mp4_preset(scn)
+        ui = getattr(scn, "ares_renderbg", None)
+        scn.render.engine = 'BLENDER_EEVEE'
+        if ui is not None:
+            scn.render.filepath = ui.output_path or d.get('filepath', '//renders/out.mp4')
+            scn.render.fps = int(ui.fps) if ui.fps else int(d.get('fps', 24))
+            seconds = int(ui.seconds) if ui.seconds else int(d.get('seconds', 4))
+        else:
+            scn.render.filepath = d.get('filepath', '//renders/out.mp4')
+            scn.render.fps = int(d.get('fps', 24))
+            seconds = int(d.get('seconds', 4))
+        scn.frame_start = 1
+        scn.frame_end = scn.frame_start + (seconds * scn.render.fps) - 1
+        self.report({'INFO'}, f"Preset OK → {scn.render.filepath} @ {scn.render.fps} fps, {seconds}s")
+        return {'FINISHED'}
 
-        # Rendu animation
-        with context.temp_override(area=None, region=None, window=None):
-            bpy.ops.render.render(animation=True)
 
-        self.report({"INFO"}, f"Rendered → {self.filepath}")
-        return {"FINISHED"}
+class ARES_OT_RenderBGRender(bpy.types.Operator):
+    """Lancer le rendu animation (encode MP4 H.264 selon le preset)."""
+    bl_idname = "ares.render_bg_render_mp4"
+    bl_label = "Render MP4"
+    bl_options = {'REGISTER'}
 
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=420)
+    def execute(self, context):
+        bpy.ops.render.render(animation=True)
+        self.report({'INFO'}, "Render MP4 terminé")
+        return {'FINISHED'}
 
+# --- Panel ---------------------------------------------------------------------
 
 class ARES_PT_RenderBG(bpy.types.Panel):
-    bl_label = "ARES Render BG"
+    """Panneau de rendu MP4 rapide (ARES)."""
+    bl_label = "ARES • Render BG"
     bl_idname = "ARES_PT_RenderBG"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "ARES"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "output"
 
     def draw(self, context):
+        scn = context.scene
+        ui = getattr(scn, "ares_renderbg", None)
         layout = self.layout
+        if ui is None:
+            layout.label(text="Initialising...", icon="INFO")
+            return
         col = layout.column(align=True)
-        op = col.operator(ARES_OT_RenderBG.bl_idname, icon="RENDER_ANIMATION")
-        op.filepath = "//renders/out.mp4"
-        op.seconds = 4
-        op.fps = 24
+        col.prop(ui, "output_path")
+        row = col.row(align=True)
+        row.prop(ui, "fps")
+        row.prop(ui, "seconds")
+        layout.separator()
+        layout.operator("ares.render_bg_apply_preset", icon="SETTINGS")
+        layout.operator("ares.render_bg_render_mp4", icon="RENDER_ANIMATION")
 
+# --- Registration --------------------------------------------------------------
+
+CLASSES = (
+    ARES_RenderBG_Props,
+    ARES_OT_RenderBGApplyPreset,
+    ARES_OT_RenderBGRender,
+    ARES_PT_RenderBG,
+)
+
+def _safe_register(cls):
+    try:
+        bpy.utils.register_class(cls)
+    except RuntimeError:
+        pass
+
+def _safe_unregister(cls):
+    try:
+        bpy.utils.unregister_class(cls)
+    except RuntimeError:
+        pass
 
 def register():
-    for cls in (ARES_OT_RenderBG, ARES_PT_RenderBG):
-        with contextlib.suppress(Exception):
-            bpy.utils.unregister_class(cls)
-        bpy.utils.register_class(cls)
-
+    for c in CLASSES:
+        _safe_register(c)
+    # PointerProperty après l'enregistrement du PropertyGroup
+    if not hasattr(bpy.types.Scene, "ares_renderbg"):
+        bpy.types.Scene.ares_renderbg = PointerProperty(type=ARES_RenderBG_Props)
 
 def unregister():
-    for cls in (ARES_PT_RenderBG, ARES_OT_RenderBG):
-        with contextlib.suppress(Exception):
-            bpy.utils.unregister_class(cls)
+    # Supprimer le pointeur de Scene si présent
+    if hasattr(bpy.types.Scene, "ares_renderbg"):
+        try:
+            del bpy.types.Scene.ares_renderbg
+        except Exception:
+            pass
+    for c in reversed(CLASSES):
+        _safe_unregister(c)
