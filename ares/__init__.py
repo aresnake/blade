@@ -8,6 +8,7 @@ bl_info = {
     "category": "3D View",
 }
 
+import contextlib
 from math import pi
 
 import bmesh
@@ -88,10 +89,8 @@ def ensure_world_settings(scene=None):
     scene = scene or bpy.context.scene
     from .helpers import engine as ares_engine
     ares_engine.ensure_engine(bpy, scene)
-    try:
+    with contextlib.suppress(Exception):
         scene.eevee.use_bloom = True
-    except Exception:
-        pass
     return scene
 
 # ---------------------------------
@@ -99,7 +98,7 @@ def ensure_world_settings(scene=None):
 # ---------------------------------
 
 def build_turntable(radius=3.0, cam_height=1.6, fov_deg=50.0):
-    scene = ensure_world_settings()
+    ensure_world_settings()
     path = bpy.data.objects.get("TT_Path") or make_curve_circle("TT_Path", radius=radius)
     rig = bpy.data.objects.get("TT_Rig")
     if not rig:

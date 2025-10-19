@@ -45,7 +45,7 @@ def _track_to(cam, target):
 
 def render_turntable(target=None, radius=2.5, seconds=4, fps=24, mp4_path="renders/turntable.mp4", samples=32):
     scn = bpy.context.scene
-    engine = select_engine(scn)
+    select_engine(scn)
 
     # cible & caméra
     tgt = target or _ensure_target()

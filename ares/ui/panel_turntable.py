@@ -2,15 +2,15 @@
 # - safe_register / safe_unregister pour éviter les warnings headless
 # - Panel simple + opérateur pour créer un turntable via ares.modules.turntable_gen
 
+import contextlib
+
 import bpy
 
 
 # --- Safe (un)register helpers ------------------------------------------------
 def safe_register(cls):
-    try:
+    with contextlib.suppress(Exception):
         bpy.utils.unregister_class(cls)
-    except Exception:
-        pass
     try:
         bpy.utils.register_class(cls)
     except ValueError:
@@ -18,10 +18,8 @@ def safe_register(cls):
         pass
 
 def safe_unregister(cls):
-    try:
+    with contextlib.suppress(Exception):
         bpy.utils.unregister_class(cls)
-    except Exception:
-        pass
 
 # --- Operator -----------------------------------------------------------------
 class ARES_OT_CreateTurntable(bpy.types.Operator):
@@ -37,10 +35,8 @@ class ARES_OT_CreateTurntable(bpy.types.Operator):
                 sys.path.append(r'D:\V13\workspace_v13')
             import ares.modules.turntable_gen as T
             T.create_turntable()
-            try:
+            with contextlib.suppress(Exception):
                 T.set_render_engine(context, 'BLENDER_EEVEE_NEXT')
-            except Exception:
-                pass
         except Exception as e:
             self.report({'ERROR'}, f"ARES: {e}")
             return {'CANCELLED'}
