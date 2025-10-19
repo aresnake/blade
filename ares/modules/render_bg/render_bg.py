@@ -1,4 +1,5 @@
-﻿"""
+# ruff: noqa: E501
+"""
 Blade v13 — render_bg (squelette)
 - Configure la sortie vidéo (FFMPEG mp4 H.264 + AAC) de manière robuste.
 - Ne lance PAS de rendu ici (smoke only).
@@ -117,4 +118,5 @@ def apply_output_preset(config_path: str = "config/render_output_defaults.yaml")
         }
 
     return res
+
 

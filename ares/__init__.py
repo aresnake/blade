@@ -32,7 +32,10 @@ __version__ = "13.0.0-test"
 # ----------------------------- Core helpers ---------------------------------
 
 
-def link_object(obj: bpy.types.Object, collection: bpy.types.Collection | None = None) -> bpy.types.Object:
+def link_object(
+    obj: bpy.types.Object,
+    collection: bpy.types.Collection | None = None,
+) -> bpy.types.Object:
     """Link an object to the active scene collection if not provided, and return it."""
     col = collection or bpy.context.scene.collection
     if obj.name not in col.objects:
@@ -40,7 +43,11 @@ def link_object(obj: bpy.types.Object, collection: bpy.types.Collection | None =
     return obj
 
 
-def make_mesh_object(name: str, verts: Sequence[Vector], faces: Sequence[Sequence[int]]) -> bpy.types.Object:
+def make_mesh_object(
+    name: str,
+    verts: Sequence[Vector],
+    faces: Sequence[Sequence[int]],
+) -> bpy.types.Object:
     """Create a mesh datablock from verts/faces arrays and return the new object."""
     me = bpy.data.meshes.new(name + "_mesh")
     me.from_pydata(verts, [], faces)

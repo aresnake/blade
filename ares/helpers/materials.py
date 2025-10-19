@@ -11,9 +11,10 @@ def ensure_material(name: str) -> bpy.types.Material:
 
 
 def assign_material(obj: bpy.types.Object, mat: bpy.types.Material):
-    if obj.data and hasattr(obj.data, "materials"):
-        if mat.name not in [m.name for m in obj.data.materials]:
-            obj.data.materials.append(mat)
+    data = getattr(obj, "data", None)
+    mats = getattr(data, "materials", None)
+    if mats is not None and mat.name not in [m.name for m in mats]:
+        mats.append(mat)
 
 
 def create_principled_setup(mat: bpy.types.Material):
@@ -22,7 +23,6 @@ def create_principled_setup(mat: bpy.types.Material):
     out = nt.nodes.get("Material Output")
     if bsdf:
         bsdf.location = (0, 0)
-    # Lien Output ← Principled si non relié
     has_link = any(
         (link.to_node == out) and (link.to_socket.name == "Surface")
         for link in nt.links
