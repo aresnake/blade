@@ -13,7 +13,6 @@ from ares.modules.render_bg import turntable_rig as TR
 importlib.reload(PR)
 importlib.reload(TR)
 
-
 # --- Property Group (module-level, fiable) -------------------------------------
 
 class ARES_RenderBG_Props(bpy.types.PropertyGroup):
@@ -37,7 +36,6 @@ class ARES_RenderBG_Props(bpy.types.PropertyGroup):
         max=600,
         default=4,
     )
-
 
 # --- Operators -----------------------------------------------------------------
 
@@ -74,7 +72,6 @@ class ARES_OT_RenderBGCreateTurntable(bpy.types.Operator):
         self.report({"INFO"}, f"Turntable OK ({info['frames']}) • r={radius} • z={cam_z}")
         return {"FINISHED"}
 
-
 class ARES_OT_RenderBGApplyPreset(bpy.types.Operator):
     """Appliquer le preset MP4 (H.264) et caler la scène (fps, frames, chemin)."""
     bl_idname = "ares.render_bg_apply_preset"
@@ -101,7 +98,6 @@ class ARES_OT_RenderBGApplyPreset(bpy.types.Operator):
         self.report({"INFO"}, "Preset OK")
         return {"FINISHED"}
 
-
 class ARES_OT_RenderBGRender(bpy.types.Operator):
     """Render de l'animation complète (frame_start→frame_end)."""
     bl_idname = "ares.render_bg_render_mp4"
@@ -112,7 +108,6 @@ class ARES_OT_RenderBGRender(bpy.types.Operator):
         bpy.ops.render.render(animation=True)
         self.report({"INFO"}, "Render MP4 terminé")
         return {"FINISHED"}
-
 
 class ARES_OT_RenderBGRenderQuick(bpy.types.Operator):
     """Render rapide ~1 seconde (utile pour les tests)."""
@@ -131,7 +126,6 @@ class ARES_OT_RenderBGRenderQuick(bpy.types.Operator):
             scn.frame_end = orig_end
         self.report({"INFO"}, "Preview 1s terminé")
         return {"FINISHED"}
-
 
 class ARES_OT_RenderBGRenderStill(bpy.types.Operator):
     """Render d'une seule image — force temporairement PNG puis restaure."""
@@ -156,7 +150,6 @@ class ARES_OT_RenderBGRenderStill(bpy.types.Operator):
             r.filepath = prev_fp
         self.report({"INFO"}, "Still PNG OK")
         return {"FINISHED"}
-
 
 # --- Panel ---------------------------------------------------------------------
 
@@ -186,6 +179,8 @@ class ARES_PT_RenderBG(bpy.types.Panel):
         row.prop(ui, "camera_z")
 
         layout.separator()
+
+        layout.operator('ares.render_bg_render_mp4', text='Render MP4')
         row = layout.row(align=True)
         row.operator("ares.render_bg_create_turntable", icon="OUTLINER_OB_CAMERA")
         row.operator("ares.render_bg_apply_preset", icon="SETTINGS")
@@ -194,7 +189,6 @@ class ARES_PT_RenderBG(bpy.types.Panel):
         row.operator("ares.render_bg_render_quick", icon="RENDER_ANIMATION")
         row = layout.row(align=True)
         row.operator("ares.render_bg_render_mp4", icon="RENDER_ANIMATION")
-
 
 # --- Registration --------------------------------------------------------------
 
@@ -206,25 +200,22 @@ CLASSES = (
     ARES_OT_RenderBGRenderQuick,
     ARES_OT_RenderBGRenderStill,
     ARES_PT_RenderBG,
+    ARES_OT_RenderBGRenderMp4
 )
-
 
 def _safe_register(cls):
     with contextlib.suppress(RuntimeError):
         bpy.utils.register_class(cls)
 
-
 def _safe_unregister(cls):
     with contextlib.suppress(RuntimeError):
         bpy.utils.unregister_class(cls)
-
 
 def register():
     for c in CLASSES:
         _safe_register(c)
     if not hasattr(bpy.types.Scene, "ares_renderbg"):
         bpy.types.Scene.ares_renderbg = PointerProperty(type=ARES_RenderBG_Props)
-
 
 def unregister():
     if hasattr(bpy.types.Scene, "ares_renderbg"):
@@ -233,7 +224,43 @@ def unregister():
     for c in reversed(CLASSES):
         _safe_unregister(c)
 
+class ARES_OT_RenderBGRenderMp4(bpy.types.Operator):
+    """Create demo scene + turntable rig and render MP4 (H.264)"""
+    bl_idname = "ares.render_bg_render_mp4"
+    bl_label = "Render MP4"
+    bl_options = {"REGISTER", "UNDO"}
 
+    def execute(self, context):
+        scn = context.scene
+        ui = getattr(scn, "ares_renderbg", None)
 
+        fps = int(getattr(ui, "fps", scn.render.fps or 24) or 24)
+        seconds = int(getattr(ui, "seconds", 4) or 4)
+        radius = float(getattr(ui, "radius", 5.0) or 5.0)
+        cam_z = float(getattr(ui, "camera_z", 5.0) or 5.0)
+        out = getattr(ui, "output_path", "//renders/out.mp4") or "//renders/out.mp4"
 
+        TR.cleanup_turntable(preserve_demo=False)
+        TR.cleanup_new_scene_elements()
+        cube = TR.make_demo_cube_sun()
 
+        TR.create_turntable(
+            scn,
+            seconds=seconds,
+            fps=fps,
+            radius=radius,
+            camera_height=cam_z,
+            focus_obj=cube,
+        )
+
+        scn.render.fps = fps
+        scn.frame_start = 1
+        scn.frame_end = 1 + (seconds * fps) - 1
+        scn.render.image_settings.file_format = "FFMPEG"
+        scn.render.ffmpeg.format = "MPEG4"
+        scn.render.ffmpeg.codec = "H264"
+        scn.render.filepath = out
+
+        bpy.ops.render.render(animation=True)
+        self.report({"INFO"}, f"Rendered to {out}")
+        return {"FINISHED"}
