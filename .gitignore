@@ -22,3 +22,7 @@ summary/*.log
 dist/
 .venv/
 .env
+
+# Local backups & timestamps (ARES)
+*.bak
+ARESBlade.txt
