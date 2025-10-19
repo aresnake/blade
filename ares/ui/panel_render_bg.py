@@ -190,40 +190,6 @@ class ARES_PT_RenderBG(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("ares.render_bg_render_mp4", icon="RENDER_ANIMATION")
 
-# --- Registration --------------------------------------------------------------
-
-CLASSES = (
-    ARES_RenderBG_Props,
-    ARES_OT_RenderBGCreateTurntable,
-    ARES_OT_RenderBGApplyPreset,
-    ARES_OT_RenderBGRender,
-    ARES_OT_RenderBGRenderQuick,
-    ARES_OT_RenderBGRenderStill,
-    ARES_PT_RenderBG,
-    ARES_OT_RenderBGRenderMp4
-)
-
-def _safe_register(cls):
-    with contextlib.suppress(RuntimeError):
-        bpy.utils.register_class(cls)
-
-def _safe_unregister(cls):
-    with contextlib.suppress(RuntimeError):
-        bpy.utils.unregister_class(cls)
-
-def register():
-    for c in CLASSES:
-        _safe_register(c)
-    if not hasattr(bpy.types.Scene, "ares_renderbg"):
-        bpy.types.Scene.ares_renderbg = PointerProperty(type=ARES_RenderBG_Props)
-
-def unregister():
-    if hasattr(bpy.types.Scene, "ares_renderbg"):
-        with contextlib.suppress(Exception):
-            del bpy.types.Scene.ares_renderbg
-    for c in reversed(CLASSES):
-        _safe_unregister(c)
-
 class ARES_OT_RenderBGRenderMp4(bpy.types.Operator):
     """Create demo scene + turntable rig and render MP4 (H.264)"""
     bl_idname = "ares.render_bg_render_mp4"
@@ -264,3 +230,37 @@ class ARES_OT_RenderBGRenderMp4(bpy.types.Operator):
         bpy.ops.render.render(animation=True)
         self.report({"INFO"}, f"Rendered to {out}")
         return {"FINISHED"}
+
+# --- Registration --------------------------------------------------------------
+
+CLASSES = (
+    ARES_RenderBG_Props,
+    ARES_OT_RenderBGCreateTurntable,
+    ARES_OT_RenderBGApplyPreset,
+    ARES_OT_RenderBGRender,
+    ARES_OT_RenderBGRenderQuick,
+    ARES_OT_RenderBGRenderStill,
+    ARES_PT_RenderBG,
+    ARES_OT_RenderBGRenderMp4
+)
+
+def _safe_register(cls):
+    with contextlib.suppress(RuntimeError):
+        bpy.utils.register_class(cls)
+
+def _safe_unregister(cls):
+    with contextlib.suppress(RuntimeError):
+        bpy.utils.unregister_class(cls)
+
+def register():
+    for c in CLASSES:
+        _safe_register(c)
+    if not hasattr(bpy.types.Scene, "ares_renderbg"):
+        bpy.types.Scene.ares_renderbg = PointerProperty(type=ARES_RenderBG_Props)
+
+def unregister():
+    if hasattr(bpy.types.Scene, "ares_renderbg"):
+        with contextlib.suppress(Exception):
+            del bpy.types.Scene.ares_renderbg
+    for c in reversed(CLASSES):
+        _safe_unregister(c)
