@@ -20,12 +20,36 @@ class AresRenderError(RuntimeError):
 
 def _ensure_scene_setup(preset: RenderPreset):
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE"  # rapide pour prévisu
-    scene.eevee.taa_render_samples = preset.samples
+
+    # --- choose engine robustly ---
+    engines = {e.identifier for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items}
+    if "BLENDER_EEVEE" in engines:
+        scene.render.engine = "BLENDER_EEVEE"
+    elif "BLENDER_EEVEE_NEXT" in engines:
+        scene.render.engine = "BLENDER_EEVEE_NEXT"
+    else:
+        scene.render.engine = "CYCLES"
+
+    # --- samples per engine (best effort) ---
+    try:
+        if scene.render.engine.startswith("BLENDER_EEVEE"):
+            # Eevee / Eevee Next
+            try:
+                scene.eevee.taa_render_samples = preset.samples
+            except Exception:
+                pass
+        elif scene.render.engine == "CYCLES":
+            scene.cycles.samples = preset.samples
+            scene.cycles.use_adaptive_sampling = True
+    except Exception:
+        pass
+
+    # --- resolution & fps ---
     scene.render.resolution_x = preset.res_x
     scene.render.resolution_y = preset.res_y
     scene.render.fps = preset.fps
 
+    # --- output format ---
     if preset.codec == "H264":
         scene.render.image_settings.file_format = "FFMPEG"
         scene.render.ffmpeg.format = "MPEG4"
