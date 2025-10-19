@@ -1,6 +1,6 @@
 ﻿# tests/smoke_helpers.py — Blade v13
 # Injecte la racine du repo dans sys.path pour importer ares/ depuis tests/
-import sys, os
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,12 +8,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 try:
-    import bpy
+    pass
 except Exception as e:
     print("[HELPERS] ❌ bpy import failed:", e)
     sys.exit(1)
 
-from ares.helpers import select_engine, ensure_material, assign_material, create_mesh_object
+from ares.helpers import assign_material, create_mesh_object, ensure_material, select_engine
 
 print("[HELPERS] Blender:", getattr(__import__("bpy").app, "version_string", "?"))
 

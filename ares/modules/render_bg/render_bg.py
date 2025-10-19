@@ -3,8 +3,10 @@ Blade v13 — render_bg (squelette)
 - Configure la sortie vidéo (FFMPEG mp4 H.264 + AAC) de manière robuste.
 - Ne lance PAS de rendu ici (smoke only).
 """
-import bpy
 from pathlib import Path
+
+import bpy
+
 
 def _safe_set(obj, prop, val):
     try:
@@ -38,7 +40,7 @@ def apply_output_preset(config_path: str = "config/render_output_defaults.yaml")
     p = Path(bpy.path.abspath("//")) / config_path if "//" in config_path else Path(config_path)
     try:
         import yaml  # type: ignore
-        with open(p, "r", encoding="utf-8") as f:
+        with open(p, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
     except Exception:
         data = {

@@ -1,14 +1,16 @@
 ﻿# tests/run_dog_turntable.py
 import sys
 from pathlib import Path
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import bpy
+
+from ares.helpers import select_engine
 from ares.modules.animals import create_lowpoly_dog
 from ares.modules.turntable import render_turntable
-from ares.helpers import select_engine
 
 print("[DOG] Blender:", bpy.app.version_string)
 select_engine()

@@ -1,5 +1,5 @@
 ﻿# tests/smoke_render_bg.py — vérifie l'application de preset FFMPEG
-import sys, os
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -7,6 +7,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import bpy
+
 from ares.helpers import select_engine
 from ares.modules.render_bg import apply_output_preset
 

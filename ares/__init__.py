@@ -8,9 +8,10 @@ bl_info = {
     "category": "3D View",
 }
 
-import bpy
-import bmesh
 from math import pi
+
+import bmesh
+import bpy
 from mathutils import Vector
 
 # -----------------------------
@@ -70,7 +71,7 @@ def make_curve_circle(name="TT_Path", radius=3.0):
         (-radius, 0.0, 0.0, 1.0),
         ( 0.0, -radius, 0.0, 1.0),
     ]
-    for p, co in zip(spline.points, coords):
+    for p, co in zip(spline.points, coords, strict=False):
         p.co = co
         p.weight = 1.0
     spline.order_u = 4

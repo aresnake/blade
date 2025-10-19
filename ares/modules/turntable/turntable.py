@@ -5,9 +5,15 @@ Blade v13 — turntable
 - Rend une courte séquence .mp4 via render_bg preset.
 """
 import math
+
 import bpy
-from ares.helpers import select_engine, create_mesh_object, ensure_material, assign_material, link_object
+
+from ares.helpers import (
+    create_mesh_object,
+    select_engine,
+)
 from ares.modules.render_bg import apply_output_preset
+
 
 def _ensure_target(name="Turntable_Target"):
     # Un petit empty (mesh minuscule) pour pointer TrackTo

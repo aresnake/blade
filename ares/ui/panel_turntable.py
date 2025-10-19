@@ -4,6 +4,7 @@
 
 import bpy
 
+
 # --- Safe (un)register helpers ------------------------------------------------
 def safe_register(cls):
     try:

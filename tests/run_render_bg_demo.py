@@ -7,6 +7,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import bpy
+
 from ares.modules.render_bg.demo import render_demo
 
 print("[RUN] Blender:", bpy.app.version_string)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Turntable rig (ARES/Blade V13)
 - Empty TT_Rig following a NURBS circle TT_Path via Follow Path
@@ -9,6 +8,7 @@ Turntable rig (ARES/Blade V13)
 - Data API only (no bpy.ops)
 """
 import math
+
 import bpy
 
 
