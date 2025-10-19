@@ -58,3 +58,29 @@ def unregister():
         _safe_unregister(panel_render_bg)
     except Exception as e:
         print("[ARES] UI unregister failed:", e)
+try:
+    _prev_register = register  # type: ignore[name-defined]
+    _prev_unregister = unregister  # type: ignore[name-defined]
+except Exception:
+    _prev_register = None
+    _prev_unregister = None
+
+def register():
+    if _prev_register:
+        try: _prev_register()
+        except Exception: pass
+    try:
+        from ares.ui import panel_tools
+        panel_tools.register()
+    except Exception:
+        pass
+
+def unregister():
+    try:
+        from ares.ui import panel_tools
+        panel_tools.unregister()
+    except Exception:
+        pass
+    if _prev_unregister:
+        try: _prev_unregister()
+        except Exception: pass
