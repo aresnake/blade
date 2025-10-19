@@ -1,3 +1,6 @@
+__version__ = '13.0.0-test2'
+__all__ = []
+
 import importlib  # keep imports at top (ruff E402)
 
 bl_info = {
