@@ -1,30 +1,37 @@
-"""ARES FixBook — squelette minimal."""
+from __future__ import annotations
+
 import datetime
 import json
 import os
 import pathlib
 
-_FIX_DIR = pathlib.Path(__file__).parent
-_BANK = _FIX_DIR / "bank_4_5.json"
+__all__ = ["log_error", "suggest_fix"]
 
-def _now():
+
+def _now() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-def load_bank():
-    if _BANK.exists():
-        return json.loads(_BANK.read_text(encoding="utf-8"))
-    return {"version": "4.5.x", "rules": []}
 
-def suggest_fix(error: str) -> dict | None:
-    bank = load_bank()
-    for r in bank.get("rules", []):
-        if any(k.lower() in error.lower() for k in r.get("keywords", [])):
-            return r
-    return None
+def suggest_fix(error: str) -> str:
+    # heuristique minuscule pour proposer un début de piste
+    if "ModuleNotFoundError" in error:
+        return "Vérifie PYTHONPATH/installation de l'addon, puis relance."
+    if "AttributeError" in error:
+        return "API Blender différente ? Ajoute un guard ou adapte l'appel."
+    return "Voir le log ci-dessous et reproduire en -b pour un patch ciblé."
+
 
 def log_error(error: str, context: dict | None = None, out_dir: str | os.PathLike = "logs"):
     os.makedirs(out_dir, exist_ok=True)
-    path = pathlib.Path(out_dir) / f"fixlog_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    payload = {"ts": _now(), "error": error, "context": context or {}, "suggested": suggest_fix(error)}
+
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = pathlib.Path(out_dir) / f"fixlog_{ts}.json"
+
+    payload = {
+        "ts": _now(),
+        "error": error,
+        "context": context or {},
+        "suggested": suggest_fix(error),
+    }
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return str(path)
