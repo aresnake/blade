@@ -1,0 +1,20 @@
+# Ruff config (bouclier temporaire pour ARES v13 rush)
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E","F","B","SIM"]
+ignore = []
+
+# On tolère certains patterns dans scripts/tests (imports tardifs, lignes longues, etc.)
+[lint.per-file-ignores]
+"ares/__init__.py" = ["E402","B008","F841"]
+"ares/fixbook/__init__.py" = ["E501"]
+"ares/helpers/materials.py" = ["E501"]
+"ares/modules/render_bg/*.py" = ["E501"]
+"ares/modules/turntable/turntable.py" = ["E501","F841"]
+"ares/modules/turntable_gen.py" = ["SIM105"]
+"ares/ui/panel_turntable.py" = ["SIM105"]
+"tests/**" = ["E402","E501"]
+"tools/**" = ["E402","E501","E702"]
+".github/scripts/*.py" = ["E402"]
