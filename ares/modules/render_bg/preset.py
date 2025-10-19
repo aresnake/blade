@@ -2,6 +2,7 @@
 # Path: ares/modules/render_bg/preset.py
 
 import contextlib
+
 import bpy
 
 
@@ -41,9 +42,4 @@ def apply_mp4_preset(scene: bpy.types.Scene):
         ff.audio_codec = "AAC"
 
     # Valeurs par défaut (UI peut les surcharger ensuite)
-    defaults = {
-        "filepath": "//renders/out.mp4",
-        "fps": 24,
-        "seconds": 4,
-    }
-    return defaults
+    return {"filepath": "//renders/out.mp4", "fps": 24, "seconds": 4}

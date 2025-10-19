@@ -23,7 +23,13 @@ class ARES_RenderBG_Props(bpy.types.PropertyGroup):
         default="//renders/out.mp4",
     )
     fps: IntProperty(name="FPS", description="Images par seconde", min=1, max=240, default=24)
-    seconds: IntProperty(name="Duration (s)", description="Durée en secondes", min=1, max=600, default=4)
+    seconds: IntProperty(
+        name="Duration (s)",
+        description="Durée en secondes",
+        min=1,
+        max=600,
+        default=4,
+    )
 
 
 # --- Operators -----------------------------------------------------------------
@@ -172,3 +178,4 @@ def unregister():
             del bpy.types.Scene.ares_renderbg
     for c in reversed(CLASSES):
         _safe_unregister(c)
+
