@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from math import radians
 
 import bpy
@@ -103,7 +104,9 @@ def _add_circle_path(radius: float, collection: bpy.types.Collection) -> bpy.typ
     return circle
 
 
-def _add_empty(name: str, collection: bpy.types.Collection, loc=(0.0, 0.0, 0.0)) -> bpy.types.Object:
+def _add_empty(
+    name: str, collection: bpy.types.Collection, loc=(0.0, 0.0, 0.0)
+) -> bpy.types.Object:
     bpy.ops.object.empty_add(type="PLAIN_AXES", location=loc)
     empty = bpy.context.active_object
     empty.name = name
@@ -120,13 +123,11 @@ def _add_camera(local_height: float, collection: bpy.types.Collection) -> bpy.ty
 
 
 def _choose_focus_object(scene: bpy.types.Scene) -> bpy.types.Object:
-    """Active > Cube > Empty focus au centre."""
+    """Active > objet actif > Cube > Empty focus au centre."""
     obj: bpy.types.Object | None = None
     obj = getattr(bpy.context, "active_object", None) or obj
-    try:
+    with contextlib.suppress(Exception):
         obj = scene.view_layers[0].objects.active or obj
-    except Exception:
-        pass
     if obj is None:
         obj = bpy.data.objects.get("Cube")
     if obj is None:

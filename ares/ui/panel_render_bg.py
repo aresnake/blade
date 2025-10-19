@@ -42,7 +42,7 @@ class ARES_RenderBG_Props(bpy.types.PropertyGroup):
 # --- Operators -----------------------------------------------------------------
 
 class ARES_OT_RenderBGCreateTurntable(bpy.types.Operator):
-    """Cleanup rig précédent, supprime Camera/Light du New, crée Cube+Sun, puis rig turntable (cible = Cube)."""
+    """Nettoie ancien rig, supprime Cam/Light du New, crée Cube+Sun, puis rig (cible=Cube)."""
     bl_idname = "ares.render_bg_create_turntable"
     bl_label = "Create Turntable"
     bl_options = {"REGISTER", "UNDO"}
