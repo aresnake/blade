@@ -29,3 +29,4 @@ ARESBlade.txt
 # ARES local timestamp files
 *ARESBlade*.txt
 \# --- Horodatage console (ARESBlade.txt
+summary/*.txt
