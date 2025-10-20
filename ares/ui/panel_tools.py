@@ -17,7 +17,8 @@ class ARES_OT_TurntableQuick(bpy.types.Operator):
         if not obj:
             self.report({"ERROR"}, "No active object")
             return {"CANCELLED"}
-        render_turntable(obj, RenderPreset(res_x=1280, res_y=720, fps=self.fps), seconds=self.seconds)
+        preset = RenderPreset(res_x=1280, res_y=720, fps=self.fps)
+        render_turntable(obj, preset, seconds=self.seconds)
         self.report({"INFO"}, "Turntable started")
         return {"FINISHED"}
 

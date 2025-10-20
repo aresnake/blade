@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 __version__ = '13.0.0-test3a'
 __all__ = []
 
@@ -67,20 +69,16 @@ except Exception:
 
 def register():
     if _prev_register:
-        try: _prev_register()
-        except Exception: pass
-    try:
+            with suppress(Exception):
+                _prev_register()
+    with suppress(Exception):
         from ares.ui import panel_tools
         panel_tools.register()
-    except Exception:
-        pass
 
 def unregister():
-    try:
+    with suppress(Exception):
         from ares.ui import panel_tools
         panel_tools.unregister()
-    except Exception:
-        pass
     if _prev_unregister:
-        try: _prev_unregister()
-        except Exception: pass
+            with suppress(Exception):
+                _prev_unregister()

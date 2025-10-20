@@ -22,7 +22,8 @@ def _ensure_scene_setup(preset: RenderPreset):
     scene = bpy.context.scene
 
     # --- choose engine robustly ---
-    engines = {e.identifier for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items}
+    enum_prop = bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items
+    engines = {e.identifier for e in enum_prop}
     if "BLENDER_EEVEE" in engines:
         scene.render.engine = "BLENDER_EEVEE"
     elif "BLENDER_EEVEE_NEXT" in engines:
@@ -30,19 +31,14 @@ def _ensure_scene_setup(preset: RenderPreset):
     else:
         scene.render.engine = "CYCLES"
 
-    # --- samples per engine (best effort) ---
-    try:
-        if scene.render.engine.startswith("BLENDER_EEVEE"):
-            # Eevee / Eevee Next
-            try:
-                scene.eevee.taa_render_samples = preset.samples
-            except Exception:
-                pass
-        elif scene.render.engine == "CYCLES":
-            scene.cycles.samples = preset.samples
-            scene.cycles.use_adaptive_sampling = True
-    except Exception:
-        pass
+    # samples (robuste)
+    if scene.render.engine.startswith("BLENDER_EEVEE"):
+        from contextlib import suppress
+        with suppress(Exception):
+            scene.eevee.taa_render_samples = preset.samples
+    elif scene.render.engine == "CYCLES":
+        scene.cycles.samples = preset.samples
+        scene.cycles.use_adaptive_sampling = True
 
     # --- resolution & fps ---
     scene.render.resolution_x = preset.res_x
@@ -59,7 +55,6 @@ def _ensure_scene_setup(preset: RenderPreset):
         scene.render.ffmpeg.max_b_frames = 2
     else:
         scene.render.image_settings.file_format = "PNG"
-
 def _get_output_path(obj_name: str, is_video: bool) -> Path:
     from ares.core.paths import ROOT
     out_dir = ROOT / "renders" / "turntable"
