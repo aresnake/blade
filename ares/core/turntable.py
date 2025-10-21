@@ -1,21 +1,25 @@
 from __future__ import annotations
 
-# Chargement des modules internes ARES
-# - turntable réel (contient la vraie fonction render_turntable(...))
-# - turntable_gen (génération du rig) : on complète ses helpers si absents
 import importlib
+import math
 from dataclasses import dataclass
+from typing import Optional
 
+
+# ---------------------------------------------------------------------------
+# Chargement des modules internes ARES
+# ---------------------------------------------------------------------------
 try:
     tt = importlib.import_module("ares.modules.turntable.turntable")
 except Exception as e:  # pragma: no cover
-    raise RuntimeError(f"[ARES] Unable to import ares.modules.turntable.turntable: {e}")
+    raise RuntimeError(
+        f"[ARES] Unable to import ares.modules.turntable.turntable: {e}"
+    )
 
 try:
     tg = importlib.import_module("ares.modules.turntable_gen")
 except Exception:  # pragma: no cover
-    # Le shim reste utilisable pour le rendu direct même si le gen est manquant,
-    # mais on le note clairement.
+    # Le shim reste utilisable pour le rendu direct même si le gen est manquant
     tg = None  # type: ignore
 
 
@@ -24,10 +28,10 @@ except Exception:  # pragma: no cover
 # ---------------------------------------------------------------------------
 def _ensure_collection(name: str = "ARES_Turntable"):
     import bpy
+
     coll = bpy.data.collections.get(name)
     if not coll:
         coll = bpy.data.collections.new(name)
-        # link au root de la scène si nécessaire
         root = bpy.context.scene.collection
         if coll.name not in [c.name for c in root.children]:
             root.children.link(coll)
@@ -35,13 +39,11 @@ def _ensure_collection(name: str = "ARES_Turntable"):
 
 
 def _link_only_to_collection(obj, collection):
-    # unlink partout
     for c in list(obj.users_collection):
         try:
             c.objects.unlink(obj)
         except Exception:
             pass
-    # link unique
     if obj.name not in collection.objects:
         collection.objects.link(obj)
     return obj
@@ -49,7 +51,7 @@ def _link_only_to_collection(obj, collection):
 
 def _make_curve_circle(name: str = "TT_Path", radius: float = 3.0):
     import bpy
-    # Réutilise si existe
+
     obj = bpy.data.objects.get(name)
     if obj and obj.type == "CURVE":
         obj.data.dimensions = "3D"
@@ -71,14 +73,13 @@ def _make_curve_circle(name: str = "TT_Path", radius: float = 3.0):
     ]
     for i, (x, y) in enumerate(coords):
         spl.points[i].co = (x * radius, y * radius, 0.0, 1.0)
-    spl.use_cyclic_u = True
 
+    spl.use_cyclic_u = True
     obj = bpy.data.objects.new(name, crv)
     bpy.context.scene.collection.objects.link(obj)
     return obj
 
 
-# Si turntable_gen est présent, on complète ses helpers manquants
 if tg is not None:
     if getattr(tg, "ensure_collection", None) is None:
         tg.ensure_collection = _ensure_collection  # type: ignore
@@ -94,70 +95,134 @@ if tg is not None:
 @dataclass
 class RenderPreset:
     """Preset minimal pour compat UI.
-    Note: le moteur/sortie/échantillons restent gérés par l'impl implémentation réelle.
+
+    Note: moteur/sortie/échantillons restent gérés par l’implémentation réelle.
     """
+
     res_x: int = 1280
     res_y: int = 720
     fps: int = 24
     samples: int = 32
 
 
-def create_turntable_rig(radius: float = 3.0):
-    """Facultatif: proxy pour création rig via turntable_gen si dispo.
-    Retourne True si au moins le path/coll nécessaires ont été assurés.
+def create_turntable_rig(radius: float = 3.0) -> bool:
+    """Proxy pour création rig via turntable_gen si dispo.
+    Retourne True si au moins path/coll existent.
     """
     if tg is None:
         return False
-    # S'assure que la collection et le path existent
     coll = tg.ensure_collection("ARES_Turntable")
     path = tg.make_curve_circle("TT_Path", radius=radius)
-    # On lie proprement (au cas où)
     _link_only_to_collection(path, coll)
     return True
 
 
-def render_turntable(
-    target=None,
-    radius: float = 2.5,
-    seconds: int = 4,
-    fps: int | None = None,
-    mp4_path: str = "renders/turntable.mp4",
-    samples: int | None = None,
+def _set_render_engine_eevee(scn) -> None:
+    """Règle moteur sur BLENDER_EEVEE (Never Again) en mode tolérant."""
+    try:
+        scn.render.engine = "BLENDER_EEVEE"
+    except Exception:
+        try:
+            scn.render.engine = "BLENDER_EEVEE_NEXT"
+        except Exception:
+            pass
+    # Safe set d’options fréquentes (tolérant aux builds)
+    ee = getattr(scn, "eevee", None)
+    if ee:
+        for attr, val in [
+            ("use_bloom", True),
+            ("use_gtao", True),
+            ("shadow_method", "ESM"),
+        ]:
+            try:
+                setattr(ee, attr, val)
+            except Exception:
+                pass
+
+
+def render_turntable(  # noqa: D401
+    target: Optional[object] = None,
+    radius: float = 2.0,
+    seconds: int = 1,
+    fps: int = 24,
+    mp4_path: str | None = None,
+    samples: int = 16,
     preset: RenderPreset | None = None,
 ):
-    """Wrapper stable qui délègue à la vraie implémentation de render_turntable.
+    """Rend une animation de turntable.
 
-    - ps / samples sont repris du preset si fournis.
-    - preset.res_x / preset.res_y sont ignorés ici si l'impl réelle ne les supporte pas,
-      mais on garde ce type pour compat UI.
+    Si `mp4_path` est fourni, force une sortie MP4 (FFMPEG/H264) vers un chemin ABSOLU.
+    Sinon, Blender utilisera la sortie courante (séquence d’images).
     """
-    # Harmonisation des paramètres depuis le preset éventuel
-    if preset is not None:
-        if fps is None:
-            fps = preset.fps
-        if samples is None:
-            samples = preset.samples
+    import bpy
+    from pathlib import Path
 
-    # Valeurs par défaut compatibles avec la signature réelle
-    if fps is None:
-        fps = 24
-    if samples is None:
-        samples = 32
+    scn = bpy.context.scene
 
-    # Appel direct de l'implémentation réelle
-    return tt.render_turntable(
-        target=target,
-        radius=radius,
-        seconds=seconds,
-        fps=fps,
-        mp4_path=mp4_path,
-        samples=samples,
-    )
+    # Moteur EEVEE par défaut (Never Again)
+    _set_render_engine_eevee(scn)
 
+    # Optionnel: preset résolution/échantillons
+    if preset:
+        try:
+            scn.render.resolution_x = getattr(preset, "res_x", scn.render.resolution_x)
+            scn.render.resolution_y = getattr(preset, "res_y", scn.render.resolution_y)
+            fps = getattr(preset, "fps", fps)
+            samples = getattr(preset, "samples", samples)
+        except Exception:
+            pass
 
-# __all__ explicite pour les imports "from ares.core import turntable"
-__all__ = [
-    "RenderPreset",
-    "create_turntable_rig",
-    "render_turntable",
-]
+    # Durée & samples
+    scn.render.fps = fps
+    try:
+        scn.cycles.samples = samples  # si moteur Cycles, ignore si EEVEE
+    except Exception:
+        pass
+
+    total_frames = max(1, int(seconds * fps))
+    scn.frame_start = 1
+    scn.frame_end = total_frames
+
+    # Caméra basique si absente
+    if bpy.context.scene.camera is None:
+        cam_data = bpy.data.cameras.new("TT_Camera")
+        cam_obj = bpy.data.objects.new("TT_Camera", cam_data)
+        bpy.context.collection.objects.link(cam_obj)
+        bpy.context.scene.camera = cam_obj
+
+    cam = bpy.context.scene.camera
+    cam.location = (radius, 0.0, radius * 0.5)
+    cam.rotation_euler = (math.radians(45), 0.0, math.radians(135))
+
+    # Sortie vidéo si mp4_path fourni
+    if mp4_path:
+        p = Path(mp4_path).with_suffix(".mp4")
+        p.parent.mkdir(parents=True, exist_ok=True)
+
+        scn.render.image_settings.file_format = "FFMPEG"
+        scn.render.ffmpeg.format = "MPEG4"
+        scn.render.ffmpeg.codec = "H264"
+        try:
+            scn.render.ffmpeg.audio_codec = "AAC"
+        except Exception:
+            pass
+        scn.render.ffmpeg.constant_rate_factor = "MEDIUM"
+        scn.render.ffmpeg.use_max_b_frames = False
+
+        scn.render.use_file_extension = True
+        scn.render.use_overwrite = True
+        scn.render.use_placeholder = False
+
+        scn.render.filepath = str(p)
+        print("[ARES][render] filepath ->", scn.render.filepath)
+
+    # Lancement rendu
+    bpy.ops.render.render(animation=True)
+
+    # Vérif post-rendu si MP4 demandé
+    if mp4_path:
+        p = Path(mp4_path).with_suffix(".mp4")
+        if p.exists():
+            print("[ARES][render][OK] wrote:", p, p.stat().st_size, "bytes")
+        else:
+            print("[ARES][render][WARN] not found:", p)
