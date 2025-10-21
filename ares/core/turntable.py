@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional
-
 # Chargement des modules internes ARES
 # - turntable réel (contient la vraie fonction render_turntable(...))
 # - turntable_gen (génération du rig) : on complète ses helpers si absents
 import importlib
+from dataclasses import dataclass
 
 try:
     tt = importlib.import_module("ares.modules.turntable.turntable")
@@ -15,7 +13,7 @@ except Exception as e:  # pragma: no cover
 
 try:
     tg = importlib.import_module("ares.modules.turntable_gen")
-except Exception as e:  # pragma: no cover
+except Exception:  # pragma: no cover
     # Le shim reste utilisable pour le rendu direct même si le gen est manquant,
     # mais on le note clairement.
     tg = None  # type: ignore
@@ -122,10 +120,10 @@ def render_turntable(
     target=None,
     radius: float = 2.5,
     seconds: int = 4,
-    fps: Optional[int] = None,
+    fps: int | None = None,
     mp4_path: str = "renders/turntable.mp4",
-    samples: Optional[int] = None,
-    preset: Optional[RenderPreset] = None,
+    samples: int | None = None,
+    preset: RenderPreset | None = None,
 ):
     """Wrapper stable qui délègue à la vraie implémentation de render_turntable.
 
