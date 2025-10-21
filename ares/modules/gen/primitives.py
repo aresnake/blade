@@ -82,3 +82,4 @@ def quick_preview_turntable(obj: bpy.types.Object,
     preset = tt.RenderPreset(res_x=1280, res_y=720, fps=fps, samples=samples)
     tt.render_turntable(target=obj, radius=radius, seconds=seconds, fps=fps, mp4_path=out_mp4, samples=samples, preset=preset)
     return out_mp4
+
