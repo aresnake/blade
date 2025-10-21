@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import contextlib
 import importlib
 import math
 from dataclasses import dataclass
-from typing import Optional
 
 
 # ---------------------------------------------------------------------------
@@ -13,8 +13,8 @@ try:
     tt = importlib.import_module("ares.modules.turntable.turntable")
 except Exception as e:  # pragma: no cover
     raise RuntimeError(
-        f"[ARES] Unable to import ares.modules.turntable.turntable: {e}"
-    )
+        "[ARES] Unable to import ares.modules.turntable.turntable"
+    ) from e
 
 try:
     tg = importlib.import_module("ares.modules.turntable_gen")
@@ -40,10 +40,8 @@ def _ensure_collection(name: str = "ARES_Turntable"):
 
 def _link_only_to_collection(obj, collection):
     for c in list(obj.users_collection):
-        try:
+        with contextlib.suppress(Exception):
             c.objects.unlink(obj)
-        except Exception:
-            pass
     if obj.name not in collection.objects:
         collection.objects.link(obj)
     return obj
@@ -119,14 +117,11 @@ def create_turntable_rig(radius: float = 3.0) -> bool:
 
 def _set_render_engine_eevee(scn) -> None:
     """Règle moteur sur BLENDER_EEVEE (Never Again) en mode tolérant."""
-    try:
+    with contextlib.suppress(Exception):
         scn.render.engine = "BLENDER_EEVEE"
-    except Exception:
-        try:
-            scn.render.engine = "BLENDER_EEVEE_NEXT"
-        except Exception:
-            pass
-    # Safe set d’options fréquentes (tolérant aux builds)
+    with contextlib.suppress(Exception):
+        scn.render.engine = "BLENDER_EEVEE_NEXT"
+
     ee = getattr(scn, "eevee", None)
     if ee:
         for attr, val in [
@@ -134,14 +129,12 @@ def _set_render_engine_eevee(scn) -> None:
             ("use_gtao", True),
             ("shadow_method", "ESM"),
         ]:
-            try:
+            with contextlib.suppress(Exception):
                 setattr(ee, attr, val)
-            except Exception:
-                pass
 
 
 def render_turntable(  # noqa: D401
-    target: Optional[object] = None,
+    target: object | None = None,
     radius: float = 2.0,
     seconds: int = 1,
     fps: int = 24,
@@ -154,8 +147,8 @@ def render_turntable(  # noqa: D401
     Si `mp4_path` est fourni, force une sortie MP4 (FFMPEG/H264) vers un chemin ABSOLU.
     Sinon, Blender utilisera la sortie courante (séquence d’images).
     """
-    import bpy
     from pathlib import Path
+    import bpy
 
     scn = bpy.context.scene
 
@@ -164,20 +157,17 @@ def render_turntable(  # noqa: D401
 
     # Optionnel: preset résolution/échantillons
     if preset:
-        try:
+        with contextlib.suppress(Exception):
             scn.render.resolution_x = getattr(preset, "res_x", scn.render.resolution_x)
             scn.render.resolution_y = getattr(preset, "res_y", scn.render.resolution_y)
             fps = getattr(preset, "fps", fps)
             samples = getattr(preset, "samples", samples)
-        except Exception:
-            pass
 
     # Durée & samples
     scn.render.fps = fps
-    try:
-        scn.cycles.samples = samples  # si moteur Cycles, ignore si EEVEE
-    except Exception:
-        pass
+    with contextlib.suppress(Exception):
+        # si moteur Cycles, ignore si EEVEE
+        scn.cycles.samples = samples
 
     total_frames = max(1, int(seconds * fps))
     scn.frame_start = 1
@@ -202,10 +192,8 @@ def render_turntable(  # noqa: D401
         scn.render.image_settings.file_format = "FFMPEG"
         scn.render.ffmpeg.format = "MPEG4"
         scn.render.ffmpeg.codec = "H264"
-        try:
+        with contextlib.suppress(Exception):
             scn.render.ffmpeg.audio_codec = "AAC"
-        except Exception:
-            pass
         scn.render.ffmpeg.constant_rate_factor = "MEDIUM"
         scn.render.ffmpeg.use_max_b_frames = False
 

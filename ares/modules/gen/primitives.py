@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Optional
 
 import bmesh
 import bpy
@@ -27,9 +26,7 @@ def ensure_principled_material(
     links = nt.links
 
     # Node Principled
-    principled = next(
-        (n for n in nodes if n.type == "BSDF_PRINCIPLED"), None
-    )
+    principled = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
     if principled is None:
         principled = nodes.new("ShaderNodeBsdfPrincipled")
         principled.location = (-200, 0)
@@ -167,15 +164,12 @@ def render_preview_mp4(
     """
     from pathlib import Path
 
-    # Chemin ABS dans le repo (évite les weird cases headless -> C:\)
     root = Path(repo_root).resolve()
     p = (root / "renders" / "preview" / f"{out_name}.mp4").resolve()
     p.parent.mkdir(parents=True, exist_ok=True)
 
     preset = RenderPreset(res_x=res_x, res_y=res_y, fps=fps, samples=samples)
 
-    # On ne dépend pas d’un objet actif ici : la caméra/scene minimale est gérée
-    # côté core.turntable.render_turntable.
     render_turntable(
         target=None,
         radius=2.0,
@@ -185,6 +179,4 @@ def render_preview_mp4(
         samples=samples,
         preset=preset,
     )
-
-    # Post-check (le core imprime aussi une trace)
     return str(p)
