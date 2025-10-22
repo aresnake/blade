@@ -1,1 +1,1 @@
-
+"""ARES UI package."""
