@@ -77,25 +77,25 @@ $md.Add('')
 
 $md.Add('## Git Status')
 $md.Add($ticks)
-$md.Add($status)
+$md.AddRange(($status -split "`r?`n"))
 $md.Add($ticks)
 $md.Add('')
 
 $md.Add('## Last 10 Commits')
 $md.Add($ticks)
-$md.Add($log)
+$md.AddRange(($log -split "`r?`n"))
 $md.Add($ticks)
 $md.Add('')
 
 $md.Add('## Local Changes')
 $md.Add($ticks)
-$md.Add($diff)
+$md.AddRange(($diff -split "`r?`n"))
 $md.Add($ticks)
 $md.Add('')
 
 $md.Add('## Untracked Files')
 $md.Add($ticks)
-$md.Add($untracked)
+$md.AddRange(($untracked -split "`r?`n"))
 $md.Add($ticks)
 
 $md -join $nl | Out-File -FilePath $reportMd -Encoding utf8
@@ -106,3 +106,4 @@ Write-Host " - $reportMd"
 
 Start-Process notepad.exe $reportMd
 Write-Host "=== [ARES] Git sync & scan XT completed ==="
+
