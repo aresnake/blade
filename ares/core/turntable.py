@@ -5,7 +5,6 @@ import importlib
 import math
 from dataclasses import dataclass
 
-
 # ---------------------------------------------------------------------------
 # Chargement des modules internes ARES
 # ---------------------------------------------------------------------------
@@ -148,6 +147,7 @@ def render_turntable(  # noqa: D401
     Sinon, Blender utilisera la sortie courante (séquence d’images).
     """
     from pathlib import Path
+
     import bpy
 
     scn = bpy.context.scene
