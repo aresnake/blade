@@ -15,15 +15,12 @@ except Exception as e:
     raise RuntimeError("Ce script doit être exécuté depuis Blender.") from e
 
 from .constants import (
-    DEFAULT_FPS,
-    DEFAULT_RES_X,
-    DEFAULT_RES_Y,
     TT_CAMERA_NAME,
     TT_PATH_NAME,
     TT_RIG_NAME,
     TT_TARGET_NAME,
 )
-from .safe_utils import ensure_collection, ensure_eevee_defaults, link_only_to_collection, safe_set
+from .safe_utils import link_only_to_collection, safe_set
 
 
 # ---------- Utils de création data-first ----------
@@ -101,151 +98,12 @@ def ensure_turntable_rig(collection: bpy.types.Collection, radius: float, height
         target.location = (0.0, 0.0, 0.0)
 
     # Caméra
-    cam = bpy.data.objects.get(TT_CAMERA_NAME)
-    if not cam:
-        cam_data = bpy.data.cameras.new(TT_CAMERA_NAME + "_DATA")
-        cam = bpy.data.objects.new(TT_CAMERA_NAME, cam_data)
-        link_only_to_collection(cam, collection)
-    # Parentage + placement caméra sur le rig, à (radius, 0, height)
-    cam.parent = rig
-    cam.location = (radius, 0.0, height)
-    # Track To strict vers la cible
-    t = next((c for c in cam.constraints if c.type == 'TRACK_TO'), None)
-    if not t:
-        t = cam.constraints.new(type='TRACK_TO')
-    t.target = target
-    t.track_axis = 'TRACK_NEGATIVE_Z'
-    t.up_axis = 'UP_Y'
-
-    return path, rig, cam
-
-# ---------- Configuration rendu ----------
-def configure_output(scene: bpy.types.Scene, out_path: str, res_x: int, res_y: int, fps: int) -> None:
-    ensure_eevee_defaults(scene)
-    scene.render.resolution_x = res_x
-    scene.render.resolution_y = res_y
-    scene.render.fps = fps
-    # FFmpeg H.264 + AAC / MP4
-    scene.render.image_settings.file_format = 'FFMPEG'
-    ff = scene.render.ffmpeg
-    ff.format = 'MPEG4'
-    ff.codec = 'H264'
-    ff.constant_rate_factor = 'MEDIUM'
-    ff.audio_codec = 'AAC'
-    # Chemin
-    scene.render.filepath = out_path
-
-def ensure_project_dirs(base_dir: str) -> str:
-    renders = os.path.join(base_dir, "renders")
-    os.makedirs(renders, exist_ok=True)
-    return renders
-
-# ---------- Pipeline principal ----------
-def render_turntable(subject: bpy.types.Object | None = None,
-                     seconds: float = 4.0,
-                     fps: int = DEFAULT_FPS,
-                     res_x: int = DEFAULT_RES_X,
-                     res_y: int = DEFAULT_RES_Y,
-                     radius: float = 3.0,
-                     height: float = 1.7) -> str:
-    """
-    Construit un rig de turntable autour du centre et rend un MP4.
-    Retourne le chemin du fichier de sortie.
-    """
-    scene = bpy.context.scene
-    ensure_eevee_defaults(scene)
-
-    # Collection de travail
-    coll = ensure_collection("ARES_Turntable")
-
-    # Sujet si absent → créer un cube data-first
-    if subject is None:
-        subject = bpy.data.objects.get("ARES_Subject")
-        if subject is None:
-            subject = create_cube("ARES_Subject", size=1.5, collection=coll)
-        else:
-            link_only_to_collection(subject, coll)
-
-    # Rig + Caméra
-    path, rig, cam = ensure_turntable_rig(coll, radius=radius, height=height, seconds=seconds, fps=fps)
-
-    # Sortie
-    base_dir = bpy.path.abspath("//")  # dossier courant (blend ou CWD)
-    renders_dir = ensure_project_dirs(base_dir)
-    out_path = os.path.join(renders_dir, "out.mp4")
-    configure_output(scene, out_path, res_x=res_x, res_y=res_y, fps=fps)
-
-    # Frames
-    total = int(round(seconds * fps)) + 1
-    scene.frame_start = 1
-    scene.frame_end = total
-
-    print(f"[ARES] Render Turntable → {out_path} ({res_x}x{res_y} @ {fps}fps, {seconds}s)")
-    bpy.ops.render.render(animation=True)
-    return out_path
-
-# ---------- Entrée script ----------
-if __name__ == "__main__":
-    render_turntable(
-        subject=None,     # prendra/creera un cube
-        seconds=4.0,
-        fps=DEFAULT_FPS,
-        res_x=DEFAULT_RES_X,
-        res_y=DEFAULT_RES_Y,
-        radius=3.0,
-        height=1.7,
-    )
-
-# === Facade de démo (validation fonctionnelle Phase 1) ===
-def demo_turntable_mp4(
-    out_path: str = "renders/demo_tt.mp4",
-    seconds: int = 1,
-    fps: int = DEFAULT_FPS,
-    res: tuple[int, int] = (DEFAULT_RES_X, DEFAULT_RES_Y),
-) -> str:
-    """
-    Génère une courte animation turntable (data-first) et encode en MP4 (Eevee/EeveeNext).
-    Retourne le chemin du MP4 écrit.
-    """
-    import math
-    import os
-    try:
-        import bmesh  # type: ignore
-        import bpy  # type: ignore
-    except Exception as e:
-        raise RuntimeError("demo_turntable_mp4 doit être exécuté dans Blender.") from e
-
-    scene = bpy.context.scene
-    ensure_eevee_defaults(scene)
-
-    # Résolution / FPS / frames
-    scene.render.resolution_x, scene.render.resolution_y = res
-    scene.render.fps = fps
-    scene.frame_start = 1
-    scene.frame_end = max(1, int(seconds * fps))
-
-    # Collection isolée
-    coll = ensure_collection("ARES_RenderBG_Demo")
-
-    # Objet: cube via bmesh (data-first)
-    mesh = bpy.data.meshes.new("DemoCube")
-    bm = bmesh.new()
-    bmesh.ops.create_cube(bm, size=1.0)
-    bm.to_mesh(mesh)
-    bm.free()
-    obj = bpy.data.objects.new("DemoCube", mesh)
-    link_only_to_collection(obj, coll)
-
-    # Cible (Empty) au centre
-    tgt = bpy.data.objects.new(TT_TARGET_NAME, None)
-    tgt.empty_display_size = 0.2
-    tgt.empty_display_type = "PLAIN_AXES"
-    link_only_to_collection(tgt, coll)
-
-    # Caméra
     cam = bpy.data.objects.new(TT_CAMERA_NAME, bpy.data.cameras.new(TT_CAMERA_NAME))
     cam.location = (2.5, 0.0, 1.2)
     link_only_to_collection(cam, coll)
+    # Force la caméra ARES comme caméra de scène
+    from .safe_utils import set_scene_camera
+    set_scene_camera(scene, cam)
 
     # Piste NURBS circulaire
     curve_data = bpy.data.curves.new(TT_PATH_NAME, "CURVE")
@@ -309,3 +167,6 @@ def demo_turntable_mp4(
         if os.path.exists(p):
             return p
     return out_path
+
+
+
