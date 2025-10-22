@@ -15,3 +15,23 @@ config/render_output_overrides.yaml
 *.blend@
 __pycache__/
 .ruff_cache/
+# --- Local env & temp ---
+.venv/
+__pycache__/
+*.pyc
+
+# --- Builds / rapports / rendus ---
+dist/
+renders/
+logs/
+datasets/
+
+# --- Backups / BLOBs temporaires ---
+*.bak
+*.bak.*
+
+# Ignore virtualenv & temp
+.venv/
+__pycache__/
+*.bak
+
