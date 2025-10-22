@@ -180,3 +180,47 @@ def render_preview_mp4(
         preset=preset,
     )
     return str(p)
+
+import contextlib
+import inspect
+from pathlib import Path
+
+def quick_preview_turntable(obj,
+                            seconds: float = 1.0,
+                            fps: int = 24,
+                            radius: float = 2.5,
+                            height: float = 1.0,
+                            res_x: int = 1280,
+                            res_y: int = 720,
+                            samples: int = 8,
+                            out_dir: str | None = None):
+    """
+    Rend un MP4 de turntable rapide autour de `obj`.
+    Wrapper résilient vers ares.core.render_bg.demo_turntable_mp4, en filtrant
+    dynamiquement les kwargs selon sa signature réelle.
+    """
+    from ares.core import render_bg as R
+    fn = getattr(R, "demo_turntable_mp4", None)
+    if fn is None:
+        raise RuntimeError("demo_turntable_mp4 indisponible dans ares.core.render_bg")
+
+    sig = inspect.signature(fn)
+    kwargs = {
+        "obj": obj,
+        "seconds": seconds,
+        "fps": fps,
+        "radius": radius,
+        "height": height,
+        "res_x": res_x,
+        "res_y": res_y,
+        "samples": samples,
+        "out_dir": out_dir,
+    }
+    filtered = {k: v for k, v in kwargs.items() if k in sig.parameters}
+
+    out_path = fn(**filtered)
+    # Normalisation de retour: string
+    if out_path is None:
+        return None
+    return str(Path(out_path))
+

@@ -1,243 +1,127 @@
-﻿bl_info = {
-    "name": "ARES Blade Panel",
-    "author": "Adrien + ARES",
-    "version": (0, 1, 0),
-    "blender": (4, 5, 0),
-    "location": "View3D > Sidebar (N) > ARES",
-    "description": "Turntable FAST, Spawn Dog (placeholder), Render BG demo",
-    "category": "3D View",
-}
+# ares/__init__.py — Public API & compat layer (v13)
+# - Ré-expose des helpers legacy attendus par modules/tests :
+#   link_object(), make_curve_circle()
+# - Data-first, pas de dépendance à active/selected.
+# - Sûr en headless (scene.collection existe).
+
+from __future__ import annotations
 
 import contextlib
-from math import pi
+from typing import Optional
 
-import bmesh
-import bpy
-from mathutils import Vector
+try:
+    import bpy
+except Exception as _e:
+    bpy = None  # permet import hors Blender (ex: out-of-process tooling)
 
-# -----------------------------
-# Helpers (data-first, no ops)
-# -----------------------------
+# --- Exports internes (stables) ---
+# N.B. On n’échoue pas si ces modules n’existent pas encore ; les helpers ci-dessous couvrent le besoin.
+with contextlib.suppress(Exception):
+    from .core import constants  # noqa: F401
 
-def link_object(obj, scene=None):
-    scene = scene or bpy.context.scene
-    if obj.name not in scene.collection.objects:
-        scene.collection.objects.link(obj)
-    return obj
 
-def make_mesh_object(name, verts, faces):
-    me = bpy.data.meshes.new(name + "_mesh")
-    me.from_pydata(verts, [], faces)
-    me.validate()
-    me.update()
-    obj = bpy.data.objects.new(name, me)
-    return link_object(obj)
+# --- Utils internes sûrs ---
 
-def make_box(name, size=1.0, center=None):
-    if center is None:
-        center = Vector((0, 0, 0))
-    s = size * 0.5
-    v = [
-        center + Vector((-s,-s,-s)), center + Vector(( s,-s,-s)),
-        center + Vector(( s, s,-s)), center + Vector((-s, s,-s)),
-        center + Vector((-s,-s, s)), center + Vector(( s,-s, s)),
-        center + Vector(( s, s, s)), center + Vector((-s, s, s)),
-    ]
-    f = [(0,1,2,3),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
-    return make_mesh_object(name, v, f)
-
-def make_uvsphere(name, radius=0.2, segments=16, rings=8, center=None):
-    if center is None:
-        center = Vector((0, 0, 0))
-    me = bpy.data.meshes.new(name + "_mesh")
-    bm = bmesh.new()
-    bmesh.ops.create_uvsphere(
-        bm, u_segments=segments, v_segments=rings, radius=radius
-    )
-    bmesh.ops.translate(bm, verts=bm.verts, vec=center)
-    bm.to_mesh(me)
-    bm.free()
-    obj = bpy.data.objects.new(name, me)
-    return link_object(obj)
-
-def make_curve_circle(name="TT_Path", radius=3.0):
-    # NURBS circle path for consistent Follow Path
-    curve = bpy.data.curves.new(name, type='CURVE')
-    curve.dimensions = '3D'
-    spline = curve.splines.new('NURBS')
-    spline.points.add(7)  # total 8 points
-    coords = [
-        ( radius, 0.0, 0.0, 1.0),
-        ( 0.0,  radius, 0.0, 1.0),
-        (-radius, 0.0, 0.0, 1.0),
-        ( 0.0, -radius, 0.0, 1.0),
-        ( radius, 0.0, 0.0, 1.0),
-        ( 0.0,  radius, 0.0, 1.0),
-        (-radius, 0.0, 0.0, 1.0),
-        ( 0.0, -radius, 0.0, 1.0),
-    ]
-    for p, co in zip(spline.points, coords, strict=False):
-        p.co = co
-        p.weight = 1.0
-    spline.order_u = 4
-    spline.use_endpoint_u = True
-    obj = bpy.data.objects.new(name, curve)
-    link_object(obj)
-    curve.use_path = True
-    curve.use_path_follow = True
-    curve.eval_time = 0
-    curve.path_duration = 250
-    return obj
-
-def ensure_world_settings(scene=None):
-    scene = scene or bpy.context.scene
-    from .helpers import engine as ares_engine
-    ares_engine.ensure_engine(bpy, scene)
-    with contextlib.suppress(Exception):
-        scene.eevee.use_bloom = True
+def _ensure_scene() -> "bpy.types.Scene":
+    if bpy is None:
+        raise RuntimeError("bpy indisponible (import hors Blender).")
+    scene = getattr(bpy.context, "scene", None)
+    if scene is None:
+        raise RuntimeError("Aucune scène active dans bpy.context.")
     return scene
 
-# ---------------------------------
-# ARES Turntable (standard v2025-09-22)
-# ---------------------------------
 
-def build_turntable(radius=3.0, cam_height=1.6, fov_deg=50.0):
-    ensure_world_settings()
-    path = bpy.data.objects.get("TT_Path") or make_curve_circle("TT_Path", radius=radius)
-    rig = bpy.data.objects.get("TT_Rig")
-    if not rig:
-        rig = bpy.data.objects.new("TT_Rig", None)
-        link_object(rig)
-    cam = bpy.data.objects.get("TT_Cam")
-    if not cam:
-        cam_data = bpy.data.cameras.new("TT_Cam_data")
-        cam = bpy.data.objects.new("TT_Cam", cam_data)
-        link_object(cam)
-
-    # position camera and parenting
-    cam.location = (radius, 0.0, cam_height)
-    cam.rotation_euler = (0.0, 0.0, pi)  # will be overridden by Track To
-    cam.parent = rig
-
-    # Follow Path constraint on rig
-    c = rig.constraints.get("Follow Path") or rig.constraints.new(type='FOLLOW_PATH')
-    c.target = path
-    c.use_fixed_location = False
-
-    # Track To constraint on camera (TRACK_NEGATIVE_Z, UP_Y)
-    t = cam.constraints.get("Track To") or cam.constraints.new(type='TRACK_TO')
-    t.target = rig
-    t.track_axis = 'TRACK_NEGATIVE_Z'
-    t.up_axis = 'UP_Y'
-
-    # Path anim via curve.eval_time (user can keyframe)
-    path.data.use_path = True
-    path.data.path_duration = max(1, path.data.path_duration or 250)
-    return {"path": path, "rig": rig, "cam": cam}
-
-# -----------------------------
-# Operators
-# -----------------------------
-
-class ARES_OT_turntable_fast(bpy.types.Operator):
-    bl_idname = "ares.turntable_fast"
-    bl_label = "Turntable FAST"
-    bl_description = "Create standard ARES turntable rig (Path + Rig + Cam)"
-
-    def execute(self, context):
-        res = build_turntable(radius=3.0, cam_height=1.6)
-        self.report({'INFO'}, f"Turntable ready: {', '.join(res.keys())}")
-        return {'FINISHED'}
-
-class ARES_OT_spawn_dog(bpy.types.Operator):
-    bl_idname = "ares.spawn_dog"
-    bl_label = "Spawn Dog (placeholder)"
-    bl_description = "Spawn a simple placeholder dog (box+head+tail)"
-
-    def execute(self, context):
-        body = make_box("Dog_Body", size=1.0, center=Vector((0,0,0.5)))
-        head = make_box("Dog_Head", size=0.5, center=Vector((0.6,0,0.9)))
-        tail = make_uvsphere("Dog_Tail", radius=0.12, center=Vector((-0.6,0,0.9)))
-        for o in (body, head, tail):
-            o.display_type = 'TEXTURED'
-        self.report({'INFO'}, "Spawned Dog placeholder")
-        return {'FINISHED'}
-
-class ARES_OT_render_bg(bpy.types.Operator):
-    bl_idname = "ares.render_bg"
-    bl_label = "Render BG (demo)"
-    bl_description = "Quick render demo: set Eevee, 1920x1080, PNG to //renders/"
-
-    def execute(self, context):
-        scene = ensure_world_settings()
-        scene.render.resolution_x = 1920
-        scene.render.resolution_y = 1080
-        scene.render.filepath = "//renders/ares_demo.png"
-        scene.render.image_settings.file_format = 'PNG'
-        # Trigger a normal render (foreground). For true background use CLI -b.
-        try:
-            bpy.ops.render.render('INVOKE_DEFAULT', write_still=True)
-            self.report({'INFO'}, f"Render started → {scene.render.filepath}")
-        except Exception as e:
-            self.report({'WARNING'}, f"Render failed: {e}")
-        return {'FINISHED'}
-
-# -----------------------------
-# UI Panel
-# -----------------------------
-
-class VIEW3D_PT_ares_panel(bpy.types.Panel):
-    bl_label = "ARES"
-    bl_idname = "VIEW3D_PT_ares_panel"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "ARES"
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column(align=True)
-        col.operator("ares.turntable_fast", icon='OUTLINER_OB_CAMERA')
-        col.operator("ares.spawn_dog", icon='MESH_CUBE')
-        col.separator()
-        col.operator("ares.render_bg", icon='RENDER_STILL')
-
-# -----------------------------
-# Register
-# -----------------------------
-
-classes = (
-    ARES_OT_turntable_fast,
-    ARES_OT_spawn_dog,
-    ARES_OT_render_bg,
-    VIEW3D_PT_ares_panel,
-)
-
-def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-def unregister():
-    for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
-
-if __name__ == "__main__":
-    register()
-
-__version__ = "13.0.0-test"
+def ensure_collection(name: str) -> "bpy.types.Collection":
+    """Retourne une Collection existante ou la crée + linke à la racine scène."""
+    scene = _ensure_scene()
+    coll = bpy.data.collections.get(name)
+    if coll is None:
+        coll = bpy.data.collections.new(name)
+        # Link en enfant de la racine de la scène
+        with contextlib.suppress(Exception):
+            scene.collection.children.link(coll)
+    return coll
 
 
-# --- ARES UI auto-register (safe) ---
-try:
-    from .ui import panel_turntable as _ui_turn
-    try:
-        _ui_turn.register()
-    except RuntimeError as e:
-        # Évite le bruit si déjà enregistré
-        if "already registered" not in str(e):
-            raise
-except Exception as _e:
-    print("[ARES][UI] panel_turntable not loaded:", _e)
+def link_only_to_collection(obj: "bpy.types.Object",
+                            collection: "bpy.types.Collection") -> "bpy.types.Object":
+    """Assure que l'objet n'est linké que dans `collection` (unlink des autres)."""
+    if bpy is None:
+        raise RuntimeError("bpy indisponible.")
+    # Unlink des autres collections pour éviter duplications
+    for c in list(getattr(obj, "users_collection", []) or []):
+        if c != collection:
+            with contextlib.suppress(Exception):
+                c.objects.unlink(obj)
+    if obj.name not in collection.objects:
+        with contextlib.suppress(Exception):
+            collection.objects.link(obj)
+    return obj
 
 
-__version__ = '13.0.0-test'
+# --- API publique (legacy) ---
 
+def link_object(obj: "bpy.types.Object",
+                collection: Optional["bpy.types.Collection"] = None) -> "bpy.types.Object":
+    """Lien sûr d'un objet dans une collection (par défaut: racine de la scène).
+
+    - Si `collection` est None → utilise `scene.collection`.
+    - Ne dépend pas d'un objet actif/sélectionné.
+    - Idempotent (ne duplique pas le lien).
+    """
+    if bpy is None:
+        raise RuntimeError("bpy indisponible.")
+    scene = _ensure_scene()
+    target = collection or scene.collection
+    if obj.name not in target.objects:
+        with contextlib.suppress(Exception):
+            target.objects.link(obj)
+    return obj
+
+
+def make_curve_circle(name: str = "TT_Path",
+                      radius: float = 1.0,
+                      collection_name: Optional[str] = None) -> "bpy.types.Object":
+    """Crée un cercle NURBS (closed) comme chemin d’orbite.
+
+    - `radius` en unités Blender.
+    - Linke dans `collection_name` si fourni, sinon dans une collection 'ARES' (créée si absente).
+    """
+    if bpy is None:
+        raise RuntimeError("bpy indisponible.")
+    crv = bpy.data.curves.new(name=name, type="CURVE")
+    crv.dimensions = "3D"
+    spline = crv.splines.new("NURBS")
+    # 4 points pour un cercle NURBS de base (ordre 4), cyclic
+    spline.points.add(3)
+    pts = [
+        ( radius, 0.0,   0.0, 1.0),
+        ( 0.0,   radius, 0.0, 1.0),
+        (-radius, 0.0,   0.0, 1.0),
+        ( 0.0,  -radius, 0.0, 1.0),
+    ]
+    for p, co in zip(spline.points, pts):
+        p.co = (co[0], co[1], co[2], co[3])
+    spline.use_cyclic_u = True
+    spline.order_u = 4
+
+    obj = bpy.data.objects.new(name, crv)
+    # Choix de collection
+    if collection_name:
+        coll = ensure_collection(collection_name)
+    else:
+        coll = ensure_collection("ARES")
+    link_only_to_collection(obj, coll)
+    return obj
+
+
+__all__ = [
+    # Compat & legacy public API
+    "link_object",
+    "make_curve_circle",
+    # Utils utiles
+    "ensure_collection",
+    "link_only_to_collection",
+    # Modules publics (si existants)
+    "constants",
+]
