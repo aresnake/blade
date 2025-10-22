@@ -4,23 +4,27 @@ Turntable & rendu MP4 en headless (Eevee), 100% data-first (pas de dépendance a
 Règles: BLENDER_EEVEE, TrackTo strict, animer curve.data.eval_time (pas FollowPath.offset_factor).
 """
 from __future__ import annotations
+
 import os
-import math
 
 try:
-    import bpy  # type: ignore
     import bmesh  # type: ignore
+    import bpy  # type: ignore
     from mathutils import Vector  # type: ignore
 except Exception as e:
     raise RuntimeError("Ce script doit être exécuté depuis Blender.") from e
 
 from .constants import (
-    RENDER_ENGINE, DEFAULT_FPS, DEFAULT_RES_X, DEFAULT_RES_Y,
-    TT_PATH_NAME, TT_RIG_NAME, TT_CAMERA_NAME, TT_TARGET_NAME,
+    DEFAULT_FPS,
+    DEFAULT_RES_X,
+    DEFAULT_RES_Y,
+    TT_CAMERA_NAME,
+    TT_PATH_NAME,
+    TT_RIG_NAME,
+    TT_TARGET_NAME,
 )
-from .safe_utils import (
-    ensure_collection, link_only_to_collection, ensure_eevee_defaults, safe_set
-)
+from .safe_utils import ensure_collection, ensure_eevee_defaults, link_only_to_collection, safe_set
+
 
 # ---------- Utils de création data-first ----------
 def _new_object_from_mesh(name: str, mesh: bpy.types.Mesh, collection: bpy.types.Collection) -> bpy.types.Object:
@@ -33,7 +37,8 @@ def create_cube(name: str, size: float, collection: bpy.types.Collection) -> bpy
     mesh = bpy.data.meshes.new(name + "_ME")
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=size)
-    bm.to_mesh(mesh); bm.free()
+    bm.to_mesh(mesh)
+    bm.free()
     return _new_object_from_mesh(name, mesh, collection)
 
 def _new_curve_object_circle(name: str, radius: float, collection: bpy.types.Collection) -> bpy.types.Object:
@@ -116,7 +121,7 @@ def ensure_turntable_rig(collection: bpy.types.Collection, radius: float, height
 
 # ---------- Configuration rendu ----------
 def configure_output(scene: bpy.types.Scene, out_path: str, res_x: int, res_y: int, fps: int) -> None:
-    scene.render.engine = RENDER_ENGINE
+    ensure_eevee_defaults(scene)
     scene.render.resolution_x = res_x
     scene.render.resolution_y = res_y
     scene.render.fps = fps
@@ -192,24 +197,28 @@ if __name__ == "__main__":
     )
 
 # === Facade de démo (validation fonctionnelle Phase 1) ===
-def demo_turntable_mp4(out_path: str = "renders/demo_tt.mp4", seconds: int = 1, fps: int = DEFAULT_FPS, res: tuple[int,int] = (DEFAULT_RES_X, DEFAULT_RES_Y)) -> str:
+def demo_turntable_mp4(
+    out_path: str = "renders/demo_tt.mp4",
+    seconds: int = 1,
+    fps: int = DEFAULT_FPS,
+    res: tuple[int, int] = (DEFAULT_RES_X, DEFAULT_RES_Y),
+) -> str:
     """
-    Génère une courte animation de turntable (data-first) et encode en MP4 (Eevee).
-    Retourne le chemin du fichier MP4.
+    Génère une courte animation turntable (data-first) et encode en MP4 (Eevee/EeveeNext).
+    Retourne le chemin du MP4 écrit.
     """
+    import math
     import os
     try:
-        import bpy  # type: ignore
         import bmesh  # type: ignore
-        from mathutils import Vector  # type: ignore
+        import bpy  # type: ignore
     except Exception as e:
         raise RuntimeError("demo_turntable_mp4 doit être exécuté dans Blender.") from e
 
     scene = bpy.context.scene
-    scene.render.engine = RENDER_ENGINE
     ensure_eevee_defaults(scene)
 
-    # Résolution / FPS
+    # Résolution / FPS / frames
     scene.render.resolution_x, scene.render.resolution_y = res
     scene.render.fps = fps
     scene.frame_start = 1
@@ -219,7 +228,6 @@ def demo_turntable_mp4(out_path: str = "renders/demo_tt.mp4", seconds: int = 1, 
     coll = ensure_collection("ARES_RenderBG_Demo")
 
     # Objet: cube via bmesh (data-first)
-    import bmesh
     mesh = bpy.data.meshes.new("DemoCube")
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
@@ -231,7 +239,7 @@ def demo_turntable_mp4(out_path: str = "renders/demo_tt.mp4", seconds: int = 1, 
     # Cible (Empty) au centre
     tgt = bpy.data.objects.new(TT_TARGET_NAME, None)
     tgt.empty_display_size = 0.2
-    tgt.empty_display_type = 'PLAIN_AXES'
+    tgt.empty_display_type = "PLAIN_AXES"
     link_only_to_collection(tgt, coll)
 
     # Caméra
@@ -240,31 +248,31 @@ def demo_turntable_mp4(out_path: str = "renders/demo_tt.mp4", seconds: int = 1, 
     link_only_to_collection(cam, coll)
 
     # Piste NURBS circulaire
-    curve_data = bpy.data.curves.new(TT_PATH_NAME, 'CURVE')
-    curve_data.dimensions = '3D'
+    curve_data = bpy.data.curves.new(TT_PATH_NAME, "CURVE")
+    curve_data.dimensions = "3D"
     curve_data.resolution_u = 64
-    spline = curve_data.splines.new('NURBS')
+    spline = curve_data.splines.new("NURBS")
     spline.points.add(7)
-    import math
-    for i, ang in enumerate([0, math.pi/4, math.pi/2, 3*math.pi/4, math.pi, 5*math.pi/4, 3*math.pi/2, 7*math.pi/4]):
+    angles = (0, math.pi/4, math.pi/2, 3*math.pi/4, math.pi, 5*math.pi/4, 3*math.pi/2, 7*math.pi/4)
+    for i, ang in enumerate(angles):
         x = 2.5 * math.cos(ang)
         y = 2.5 * math.sin(ang)
         spline.points[i].co = (x, y, 0.0, 1.0)
     curve_obj = bpy.data.objects.new(TT_PATH_NAME, curve_data)
     link_only_to_collection(curve_obj, coll)
 
-    # Contraintes: caméra suit le chemin + TrackTo vers la cible (axes stricts)
-    follow = cam.constraints.new(type='FOLLOW_PATH')
+    # Contraintes: Follow Path + Track To (axes stricts)
+    follow = cam.constraints.new(type="FOLLOW_PATH")
     follow.target = curve_obj
     follow.use_fixed_location = False
     follow.use_curve_follow = False
 
-    track = cam.constraints.new(type='TRACK_TO')
+    track = cam.constraints.new(type="TRACK_TO")
     track.target = tgt
-    track.track_axis = 'TRACK_NEGATIVE_Z'
-    track.up_axis = 'UP_Y'
+    track.track_axis = "TRACK_NEGATIVE_Z"
+    track.up_axis = "UP_Y"
 
-    # Animation: animer curve.eval_time (Never Again rule)
+    # Animation: animer curve.eval_time
     curve_data.path_duration = max(1, scene.frame_end - scene.frame_start + 1)
     curve_data.use_path = True
     curve_data.eval_time = 0.0
@@ -272,17 +280,32 @@ def demo_turntable_mp4(out_path: str = "renders/demo_tt.mp4", seconds: int = 1, 
     curve_data.eval_time = float(curve_data.path_duration)
     curve_data.keyframe_insert(data_path="eval_time", frame=scene.frame_end)
 
-    # Sortie MP4 (H.264/AAC)
+    # Sortie MP4 (H.264/AAC) — robuste Windows/Blender
+    out_path = os.path.abspath(out_path)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    scene.render.filepath = os.path.splitext(out_path)[0]  # Blender ajoute .mp4 lui-même
-    scene.render.image_settings.file_format = 'FFMPEG'
-    scene.render.ffmpeg.format = 'MPEG4'
-    scene.render.ffmpeg.codec = 'H264'
-    scene.render.ffmpeg.audio_codec = 'AAC'
-    scene.render.ffmpeg.constant_rate_factor = 'MEDIUM'
-    scene.render.use_file_extension = True
 
-    # Rendu
-    bpy.ops.render.render(animation=True)  # rendu animation (headless)
-    final_path = scene.render.filepath if scene.render.filepath.lower().endswith(".mp4") else scene.render.filepath + ".mp4"
-    return final_path
+    scene.render.image_settings.file_format = "FFMPEG"
+    scene.render.ffmpeg.format = "MPEG4"
+    scene.render.ffmpeg.codec = "H264"
+    scene.render.ffmpeg.audio_codec = "AAC"
+    scene.render.ffmpeg.constant_rate_factor = "MEDIUM"
+
+    # Important: écrire directement vers le chemin final avec extension
+    scene.render.filepath = out_path
+    scene.render.use_file_extension = False  # évite double extension
+
+    # Rendu animation
+    bpy.ops.render.render(animation=True)
+
+    # Résolution robuste du chemin écrit par Blender/FFmpeg
+    base, _ = os.path.splitext(out_path)
+    candidates = [
+        out_path,
+        base + ".mp4",
+        base + "-0001.mp4",
+        base + "-0000.mp4",
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return out_path
