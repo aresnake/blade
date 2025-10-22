@@ -1,0 +1,19 @@
+{
+  "timestamp": "20251018_024049",
+  "branch": "dev",
+  "blender_exe": "D:\\blender-4.5.3-clean\\blender-4.5.3-windows-x64\\blender.exe",
+  "blender_ok": true,
+  "blender_tag": "[BLENDER] 4.5.3 LTS",
+  "exists": {
+    "dist/": true,
+    "tests/": true,
+    "tools/": true,
+    "reports/": true,
+    "ares/__init__.py": true
+  },
+  "counts": {
+    "md": 7,
+    "py": 27
+  },
+  "git_head": "90873bc 2025-10-17 13:14:59 +0200 chore(turntable_gen): remove old duplicate set_render_engine definition (clean F811)"
+}

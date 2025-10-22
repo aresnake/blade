@@ -1,0 +1,62 @@
+tools\blender_sanity.py:1:1: E401 [*] Multiple imports on one line
+  |
+1 | import bpy, json, sys, os, math
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ E401
+2 | from mathutils import Vector
+  |
+  = help: Split imports
+
+tools\blender_sanity.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+  |
+1 | / import bpy, json, sys, os, math
+2 | | from mathutils import Vector
+  | |____________________________^ I001
+3 |
+4 |   # Args: -- output_png
+  |
+  = help: Organize imports
+
+tools\blender_sanity.py:2:23: F401 [*] `mathutils.Vector` imported but unused
+  |
+1 | import bpy, json, sys, os, math
+2 | from mathutils import Vector
+  |                       ^^^^^^ F401
+3 |
+4 | # Args: -- output_png
+  |
+  = help: Remove unused import: `mathutils.Vector`
+
+tools\blender_sanity.py:6:1: SIM108 Use ternary operator `out = argv[argv.index("--") + 1] if "--" in argv else os.path.join(os.getcwd(), "sanity.png")` instead of `if`-`else`-block
+   |
+ 4 |   # Args: -- output_png
+ 5 |   argv = sys.argv
+ 6 | / if "--" in argv:
+ 7 | |     out = argv[argv.index("--")+1]
+ 8 | | else:
+ 9 | |     out = os.path.join(os.getcwd(), "sanity.png")
+   | |_________________________________________________^ SIM108
+10 |
+11 |   # scene clean
+   |
+   = help: Replace `if`-`else`-block with `out = argv[argv.index("--") + 1] if "--" in argv else os.path.join(os.getcwd(), "sanity.png")`
+
+tools\blender_sanity.py:36:8: E701 Multiple statements on one line (colon)
+   |
+34 | mat.use_nodes = True
+35 | bsdf = mat.node_tree.nodes.get("Principled BSDF")
+36 | if bsdf: bsdf.inputs["Roughness"].default_value = 0.35
+   |        ^ E701
+37 | cube.data.materials.append(mat)
+   |
+
+tools\blender_sanity.py:54:47: W292 [*] No newline at end of file
+   |
+52 | bpy.context.scene.render.filepath = out
+53 | bpy.ops.render.render(write_still=True)
+54 | print("[SANITY] wrote", out, "and", json_path)
+   |                                               ^ W292
+   |
+   = help: Add trailing newline
+
+Found 6 errors.
+[*] 4 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).

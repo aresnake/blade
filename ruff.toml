@@ -1,0 +1,15 @@
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E","F","B","SIM"]
+ignore = []
+
+[lint.per-file-ignores]
+"ares/__init__.py" = ["E402","B008"]
+"ares/modules/turntable/turntable.py" = ["E501"]
+"ares/modules/render_bg/*.py" = ["E501"]
+"ares/modules/render_bg/render_bg.py" = ["E501"]
+".github/scripts/*.py" = ["E402"]
+"tests/**" = ["E402","E501","E702"]
+"tools/**" = ["E402","E501","E702"]

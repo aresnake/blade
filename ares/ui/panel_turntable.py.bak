@@ -1,0 +1,61 @@
+# -*- coding: utf-8 -*-
+import bpy
+
+import bpy
+
+def safe_register(cls):
+    try:
+        bpy.utils.unregister_class(cls)
+    except Exception:
+        pass
+    try:
+        safe_register(cls)
+    except ValueError:
+        pass
+BL_CATEGORY = "ARES"
+
+class ARES_OT_CreateTurntable(bpy.types.Operator):
+    bl_idname = "ares.create_turntable"
+    bl_label = "Create Turntable"
+    bl_description = "Create a standard ARES turntable rig"
+    bl_options = {"REGISTER", "UNDO"}
+
+    radius: bpy.props.FloatProperty(name="Radius", default=6.0, min=0.1)
+    height: bpy.props.FloatProperty(name="Camera Height", default=2.0)
+    duration: bpy.props.IntProperty(name="Frames", default=240, min=1)
+    fps: bpy.props.IntProperty(name="FPS", default=24, min=1)
+
+    def execute(self, context):
+        try:
+            from ares.modules import turntable_gen as tt
+            tt.create_turntable(
+                radius=self.radius,
+                height=self.height,
+                path_duration=self.duration,
+                fps=self.fps,
+            )
+            self.report({"INFO"}, "ARES turntable created")
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({"ERROR"}, f"ARES turntable failed: {e}")
+            return {"CANCELLED"}
+
+
+class ARES_PT_Turntable(bpy.types.Panel):
+    bl_label = "Turntable"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = BL_CATEGORY
+
+    def draw(self, context):
+        col = self.layout.column(align=True)
+        op = col.operator("ares.create_turntable", icon="CAMERA_DATA", text="Create Turntable")
+
+def register():
+    safe_register(ARES_OT_CreateTurntable)
+    safe_register(ARES_PT_Turntable)
+
+def unregister():
+    bpy.utils.unregister_class(ARES_PT_Turntable)
+    bpy.utils.unregister_class(ARES_OT_CreateTurntable)
+
