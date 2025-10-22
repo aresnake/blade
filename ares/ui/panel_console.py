@@ -6,8 +6,9 @@ try:
 except Exception as e:
     raise RuntimeError("Ce module UI doit être chargé depuis Blender.") from e
 
-from bpy.types import Operator, Panel
 from bpy.props import IntProperty, StringProperty
+from bpy.types import Operator, Panel
+
 
 # Import tardif pour éviter les erreurs si Blender n'est pas chargé
 def _render_demo(out_path: str, seconds: int, fps: int, res_x: int, res_y: int) -> str:
