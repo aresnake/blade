@@ -48,6 +48,21 @@
       "dependsOn": ["ARES: Boot (env + checks)"],
       "problemMatcher": []
     },
+
+    // ---------- NOUVELLE TASK AVEC PRESETS ----------
+    {
+      "label": "ARES: Render Orbit (MP4, preset)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile","-Command",
+        "$env:BLENDER_EXE='D:/blender-4.5.3-clean/blender-4.5.3-windows-x64/blender.exe'; "+
+        "& $env:BLENDER_EXE -b --factory-startup --python ares/sandbox/render_orbit.py -- --seconds ${input:secondsPreset} --fps ${input:fpsPreset} --res ${input:resPreset} --radius ${input:radiusPreset} --height ${input:heightPreset} --outfile \"${input:outfilePreset}\""
+      ],
+      "dependsOn": ["ARES: Boot (env + checks)"],
+      "problemMatcher": []
+    },
+
     {
       "label": "ARES: Tag Analyze (show last tag)",
       "type": "shell",
@@ -65,6 +80,13 @@
     { "id": "res",     "type": "promptString", "description": "Résolution (LxH)",  "default": "1280x720" },
     { "id": "radius",  "type": "promptString", "description": "Rayon caméra",       "default": "6.0" },
     { "id": "height",  "type": "promptString", "description": "Hauteur caméra",     "default": "2.0" },
-    { "id": "outfile", "type": "promptString", "description": "Chemin sortie MP4 (relatif ou absolu)", "default": "renders/orbit/orbit.mp4" }
+    { "id": "outfile", "type": "promptString", "description": "Chemin sortie MP4 (relatif ou absolu)", "default": "renders/orbit/orbit.mp4" },
+
+    { "id": "secondsPreset", "type": "quickPick", "description": "Durée", "options": ["3","4","6","8","10"], "default": "4" },
+    { "id": "fpsPreset",     "type": "quickPick", "description": "FPS",   "options": ["24","25","30","60"],   "default": "24" },
+    { "id": "resPreset",     "type": "quickPick", "description": "Résolution", "options": ["1280x720","1920x1080","2560x1440","3840x2160"], "default": "1920x1080" },
+    { "id": "radiusPreset",  "type": "quickPick", "description": "Rayon caméra", "options": ["4.0","6.0","8.0","10.0"], "default": "6.0" },
+    { "id": "heightPreset",  "type": "quickPick", "description": "Hauteur caméra", "options": ["1.5","2.0","3.0"], "default": "2.0" },
+    { "id": "outfilePreset", "type": "promptString", "description": "Chemin sortie MP4", "default": "renders/orbit/orbit.mp4" }
   ]
 }
