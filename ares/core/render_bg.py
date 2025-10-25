@@ -1,12 +1,13 @@
 # ares/core/render_bg.py — turntable Eevee MP4 robuste (headless safe)
 from __future__ import annotations
 
-import math
 import contextlib
+import inspect
+import math
 from pathlib import Path
 from typing import Tuple
 
-import inspect
+
 def _set_scene_camera_compat(cam):
     """Compat: accepte _set_scene_camera_compat(cam) ou set_scene_camera(scene, cam)."""
     try:
@@ -25,14 +26,14 @@ except Exception as _e:
 # --- Constantes (import si dispo, sinon défauts) ---
 try:
     from .constants import (
-        TT_RIG_NAME,
-        TT_TARGET_NAME,
-        TT_CAMERA_NAME,
+        DEFAULT_FPS,
+        DEFAULT_HEIGHT,
+        DEFAULT_RADIUS,
         DEFAULT_RES_X,
         DEFAULT_RES_Y,
-        DEFAULT_FPS,
-        DEFAULT_RADIUS,
-        DEFAULT_HEIGHT,
+        TT_CAMERA_NAME,
+        TT_RIG_NAME,
+        TT_TARGET_NAME,
     )
 except Exception:
     TT_RIG_NAME = "TT_Rig"
@@ -46,7 +47,7 @@ except Exception:
 
 # --- Utils (prend safe_utils si présent, sinon fallback local) ---
 with contextlib.suppress(Exception):
-    from .safe_utils import purge_scene_defaults, set_scene_camera, ensure_eevee_defaults
+    from .safe_utils import ensure_eevee_defaults, purge_scene_defaults, set_scene_camera
 
 if "purge_scene_defaults" not in globals():
     def purge_scene_defaults():
@@ -79,24 +80,25 @@ if "ensure_eevee_defaults" not in globals():
 # Compat util depuis ares.__init__ (déjà ajouté)
 from ares import ensure_collection, link_only_to_collection
 
-def _ensure_camera(name: str = TT_CAMERA_NAME) -> "bpy.types.Object":
+
+def _ensure_camera(name: str = TT_CAMERA_NAME) -> bpy.types.Object:
     cam_data = bpy.data.cameras.new(name)
     cam = bpy.data.objects.new(name, cam_data)
     return cam
 
-def _ensure_target(name: str = TT_TARGET_NAME) -> "bpy.types.Object":
+def _ensure_target(name: str = TT_TARGET_NAME) -> bpy.types.Object:
     empty = bpy.data.objects.new(name, None)
     empty.empty_display_type = "PLAIN_AXES"
     return empty
 
-def _animate_rig_rotation(rig: "bpy.types.Object", frame_start: int, frame_end: int):
+def _animate_rig_rotation(rig: bpy.types.Object, frame_start: int, frame_end: int):
     rig.rotation_mode = "XYZ"
     rig.rotation_euler = (0.0, 0.0, 0.0)
     rig.keyframe_insert(data_path="rotation_euler", frame=frame_start, index=-1)
     rig.rotation_euler = (0.0, 0.0, 2 * math.pi)
     rig.keyframe_insert(data_path="rotation_euler", frame=frame_end, index=-1)
 
-def _set_output_mp4(scene: "bpy.types.Scene", out_path: Path):
+def _set_output_mp4(scene: bpy.types.Scene, out_path: Path):
     r = scene.render
     out_path.parent.mkdir(parents=True, exist_ok=True)
     r.filepath = str(out_path)
