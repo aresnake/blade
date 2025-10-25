@@ -3,7 +3,9 @@ ARES Sandbox quick test — Blender headless safe.
 - Auto-sélectionne le meilleur render engine disponible.
 - Respect des règles "Never Again" (no-ops, safe-set).
 """
-import sys, json
+import json
+import sys
+
 try:
     import bpy
 except Exception:
