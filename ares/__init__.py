@@ -22,7 +22,7 @@ with contextlib.suppress(Exception):
 
 # --- Utils internes sûrs ---
 
-def _ensure_scene() -> "bpy.types.Scene":
+def _ensure_scene() -> bpy.types.Scene:
     if bpy is None:
         raise RuntimeError("bpy indisponible (import hors Blender).")
     scene = getattr(bpy.context, "scene", None)
@@ -31,7 +31,7 @@ def _ensure_scene() -> "bpy.types.Scene":
     return scene
 
 
-def ensure_collection(name: str) -> "bpy.types.Collection":
+def ensure_collection(name: str) -> bpy.types.Collection:
     """Retourne une Collection existante ou la crée + linke à la racine scène."""
     scene = _ensure_scene()
     coll = bpy.data.collections.get(name)
@@ -43,8 +43,8 @@ def ensure_collection(name: str) -> "bpy.types.Collection":
     return coll
 
 
-def link_only_to_collection(obj: "bpy.types.Object",
-                            collection: "bpy.types.Collection") -> "bpy.types.Object":
+def link_only_to_collection(obj: bpy.types.Object,
+                            collection: bpy.types.Collection) -> bpy.types.Object:
     """Assure que l'objet n'est linké que dans `collection` (unlink des autres)."""
     if bpy is None:
         raise RuntimeError("bpy indisponible.")
@@ -61,8 +61,8 @@ def link_only_to_collection(obj: "bpy.types.Object",
 
 # --- API publique (legacy) ---
 
-def link_object(obj: "bpy.types.Object",
-                collection: Optional["bpy.types.Collection"] = None) -> "bpy.types.Object":
+def link_object(obj: bpy.types.Object,
+                collection: Optional[bpy.types.Collection] = None) -> bpy.types.Object:
     """Lien sûr d'un objet dans une collection (par défaut: racine de la scène).
 
     - Si `collection` est None → utilise `scene.collection`.
@@ -81,7 +81,7 @@ def link_object(obj: "bpy.types.Object",
 
 def make_curve_circle(name: str = "TT_Path",
                       radius: float = 1.0,
-                      collection_name: Optional[str] = None) -> "bpy.types.Object":
+                      collection_name: Optional[str] = None) -> bpy.types.Object:
     """Crée un cercle NURBS (closed) comme chemin d’orbite.
 
     - `radius` en unités Blender.
