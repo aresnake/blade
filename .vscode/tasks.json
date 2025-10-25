@@ -1,0 +1,70 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ARES: Boot (env + checks)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile","-Command",
+        "$env:BLENDER_EXE='D:/blender-4.5.3-clean/blender-4.5.3-windows-x64/blender.exe'; "+
+        "& $env:BLENDER_EXE -v; git --version; Write-Host 'Repo:' (Get-Location)"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "ARES: Render Smoke (PNG)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile","-Command",
+        "$env:BLENDER_EXE='D:/blender-4.5.3-clean/blender-4.5.3-windows-x64/blender.exe'; "+
+        "& $env:BLENDER_EXE -b --factory-startup --python ares/sandbox/render_smoke.py"
+      ],
+      "dependsOn": ["ARES: Boot (env + checks)"],
+      "problemMatcher": []
+    },
+    {
+      "label": "ARES: Render Orbit (MP4)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile","-Command",
+        "$env:BLENDER_EXE='D:/blender-4.5.3-clean/blender-4.5.3-windows-x64/blender.exe'; "+
+        "& $env:BLENDER_EXE -b --factory-startup --python ares/sandbox/render_orbit.py"
+      ],
+      "dependsOn": ["ARES: Boot (env + checks)"],
+      "problemMatcher": []
+    },
+    {
+      "label": "ARES: Render Orbit (MP4, args)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile","-Command",
+        "$env:BLENDER_EXE='D:/blender-4.5.3-clean/blender-4.5.3-windows-x64/blender.exe'; "+
+        "& $env:BLENDER_EXE -b --factory-startup --python ares/sandbox/render_orbit.py -- --seconds ${input:seconds} --fps ${input:fps} --res ${input:res} --radius ${input:radius} --height ${input:height} --outfile \"${input:outfile}\""
+      ],
+      "dependsOn": ["ARES: Boot (env + checks)"],
+      "problemMatcher": []
+    },
+    {
+      "label": "ARES: Tag Analyze (show last tag)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile","-Command",
+        "$last=(git describe --tags --abbrev=0); git show $last --stat; Write-Host 'LAST TAG:' $last"
+      ],
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    { "id": "seconds", "type": "promptString", "description": "Durée en secondes", "default": "4" },
+    { "id": "fps",     "type": "promptString", "description": "FPS",                "default": "24" },
+    { "id": "res",     "type": "promptString", "description": "Résolution (LxH)",  "default": "1280x720" },
+    { "id": "radius",  "type": "promptString", "description": "Rayon caméra",       "default": "6.0" },
+    { "id": "height",  "type": "promptString", "description": "Hauteur caméra",     "default": "2.0" },
+    { "id": "outfile", "type": "promptString", "description": "Chemin sortie MP4 (relatif ou absolu)", "default": "renders/orbit/orbit.mp4" }
+  ]
+}
